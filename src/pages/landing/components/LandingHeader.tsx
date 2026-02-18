@@ -1,12 +1,15 @@
 import Container from "../../../components/Container";
 import "../styles/header.css";
+import speakfitLogo from "../speakfit-logo.png";
 
 export default function LandingHeader() {
   return (
     <header className="landing-header">
       <Container className="landing-header__inner">
         <div className="landing-header__brand">
-          <div className="landing-header__logo" />
+          <div className="landing-header__logo">
+            <img src={speakfitLogo} alt="SpeakFit Logo" />
+          </div>
           <span className="landing-header__name">Speakfit</span>
         </div>
 
