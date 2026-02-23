@@ -28,7 +28,7 @@
 
 .landing-footer__brand {
   display: flex;
-  flex-direction: center;
+  align-items: center;
   gap: 8px;
 }
 
