@@ -1,0 +1,48 @@
+.landing-header {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 10;
+}
+
+.landing-header__inner {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.landing-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-header__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #111;
+}
+
+.landing-header__name {
+  font-weight: 700;
+}
+
+.landing-header__nav {
+  display: flex;
+  gap: 18px;
+  color: #444;
+}
+
+.landing-header__actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .landing-header__nav {
+    display: none;
+  } /* 모바일은 메뉴 숨기고 나중에 햄버거 추가 */
+}

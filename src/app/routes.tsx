@@ -1,8 +1,14 @@
-// 라우트 경로 상수 모음
-export const ROUTES = {
-  LANDING: "/",
-  LOGIN: "/login",
-  // 이후 추가
-  // SIGNUP: "/signup",
-  // SCRIPTS: "/scripts",
-} as const;
+import { createBrowserRouter } from "react-router-dom";
+import Layout from "../components/Layout";
+import LandingPage from "../pages/LandingPage";
+import { ROUTES } from "./routes.const";
+
+export const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      { path: ROUTES.LANDING, element: <LandingPage /> },
+      // { path: ROUTES.LOGIN, element: <LoginPage /> },
+    ],
+  },
+]);
