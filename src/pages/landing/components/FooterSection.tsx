@@ -1,5 +1,6 @@
 import Container from "../../../components/Container";
 import "../styles/footer.css";
+import { Link } from "react-router-dom";
 import speakfitLogo from "../speakfit-logo.png";
 
 export default function FooterSection() {
@@ -16,15 +17,15 @@ export default function FooterSection() {
             </div>
 
             <nav className="landing-footer__links">
-              <a href="/terms" className="landing-footer__link">
+              <Link to="/terms" className="landing-footer__link">
                 이용약관
-              </a>
-              <a href="/privacy" className="landing-footer__link">
+              </Link>
+              <Link to="/privacy" className="landing-footer__link">
                 개인정보처리방침
-              </a>
-              <a href="/license" className="landing-footer__link">
+              </Link>
+              <Link to="/license" className="landing-footer__link">
                 라이선스
-              </a>
+              </Link>
             </nav>
           </div>
           <div className="landing-footer__meta">

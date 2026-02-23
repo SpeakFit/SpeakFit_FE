@@ -1,9 +1,11 @@
 import "../styles/feature.css";
+import {Link} from "react-router-dom";
 
 type Props = {
   title: string;
   description: string;
   buttonText: string;
+  buttonTo: string;
   imageSrc: string;
   imageAlt: string;
   reverse?: boolean;
@@ -14,6 +16,7 @@ export default function FeatureRow({
   title,
   description,
   buttonText,
+  buttonTo,
   imageSrc,
   imageAlt,
   reverse = false,
@@ -24,7 +27,7 @@ export default function FeatureRow({
       <div className="feature-row__content">
         <h2 className="feature-row__title">{title}</h2>
         <p className="feature-row__desc">{description}</p>
-        <button className="btn btn-primary">{buttonText}</button>
+        <Link to={buttonTo} className="btn btn-primary">{buttonText}</Link>
       </div>
 
       <div className="feature-row__imageWrap">

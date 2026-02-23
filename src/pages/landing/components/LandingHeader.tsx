@@ -1,5 +1,7 @@
 import Container from "../../../components/Container";
 import "../styles/header.css";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../../app/routes.const";
 import speakfitLogo from "../speakfit-logo.png";
 
 export default function LandingHeader() {
@@ -20,12 +22,12 @@ export default function LandingHeader() {
         </nav>
 
         <div className="landing-header__actions">
-          <a className="btn btn-ghost" href="/login">
+          <Link className="btn btn-ghost" to={ROUTES.LOGIN}>
             로그인
-          </a>
-          <a className="btn btn-primary" href="/signup">
+          </Link>
+          <Link className="btn btn-primary" to="/signup">
             회원가입
-          </a>
+          </Link>
         </div>
       </Container>
     </header>
