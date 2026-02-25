@@ -2,7 +2,7 @@ import Container from "../../../components/Container";
 import "../styles/header.css";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../app/routes.const";
-import speakfitLogo from "../speakfit-logo.png";
+import speakfitLogo from "../../../assets/speakfit-logo.png";
 
 export default function LandingHeader() {
   return (

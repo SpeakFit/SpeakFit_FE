@@ -2,8 +2,8 @@ import Container from "../../../components/Container";
 import FeatureRow from "./FeatureRow";
 import "../styles/feature.css";
 
-import featureImage1 from "../feature-image1.png";
-import featureImage2 from "../feature-image2.png";
+import featureImage1 from "../../../assets/feature-image1.png";
+import featureImage2 from "../../../assets/feature-image2.png";
 
 export default function FeatureSection() {
   return (
