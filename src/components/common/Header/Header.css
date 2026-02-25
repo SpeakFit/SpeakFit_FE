@@ -7,7 +7,8 @@
 
 .app-header__inner {
   display: flex;
-  width: 1440px;
+  width: 100%;
+  max-width: 1440px;
   padding: 24px 64px 24px 34px;
   justify-content: space-between;
   align-items: center;
