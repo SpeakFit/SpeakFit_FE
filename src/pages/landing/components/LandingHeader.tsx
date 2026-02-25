@@ -25,7 +25,7 @@ export default function LandingHeader() {
           <Link className="btn btn-ghost" to={ROUTES.LOGIN}>
             로그인
           </Link>
-          <Link className="btn btn-primary" to="/signup">
+          <Link className="btn btn-primary" to={ROUTES.SIGNUP}>
             회원가입
           </Link>
         </div>
