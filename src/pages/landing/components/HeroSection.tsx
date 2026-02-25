@@ -1,6 +1,6 @@
 import Container from "../../../components/Container";
 import "../styles/hero.css";
-import heroImage from "../hero-image.png";
+import heroImage from "../../../assets/hero-image.png";
 
 export default function HeroSection() {
   return (

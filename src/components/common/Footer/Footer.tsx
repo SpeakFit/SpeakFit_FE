@@ -1,7 +1,7 @@
 import Container from "../../../components/Container";
-import "../styles/footer.css";
+import "./Footer.css";
 import { Link } from "react-router-dom";
-import speakfitLogo from "../speakfit-logo.png";
+import speakfitLogo from "../../../assets/speakfit-logo.png";
 
 export default function FooterSection() {
   return (

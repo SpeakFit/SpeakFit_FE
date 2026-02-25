@@ -1,0 +1,32 @@
+.app-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.app-header__inner {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  padding: 24px 64px 24px 34px;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-header__brand--name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.app-header__logo img{
+  width: 24px;
+  height: 24px;
+  display: block;
+}

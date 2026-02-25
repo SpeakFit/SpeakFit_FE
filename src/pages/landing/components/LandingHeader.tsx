@@ -2,7 +2,7 @@ import Container from "../../../components/Container";
 import "../styles/header.css";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../app/routes.const";
-import speakfitLogo from "../speakfit-logo.png";
+import speakfitLogo from "../../../assets/speakfit-logo.png";
 
 export default function LandingHeader() {
   return (
@@ -25,7 +25,7 @@ export default function LandingHeader() {
           <Link className="btn btn-ghost" to={ROUTES.LOGIN}>
             로그인
           </Link>
-          <Link className="btn btn-primary" to="/signup">
+          <Link className="btn btn-primary" to={ROUTES.SIGNUP}>
             회원가입
           </Link>
         </div>

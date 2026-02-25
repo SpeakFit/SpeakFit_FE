@@ -1,14 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
-import Layout from "../components/Layout";
-import LandingPage from "../pages/LandingPage";
+import FooterLayout from "../components/FooterLayout"
+import Layout from "../components/DefaultLayout";
+import LandingPage from "../pages/landing/LandingPage";
+import SignupPage from "../pages/signup/SignupPage";
 import { ROUTES } from "./routes.const";
 
 export const router = createBrowserRouter([
   {
+    element: <FooterLayout />,
+    children: [{ path: ROUTES.LANDING, element: <LandingPage /> }],
+  },
+  {
     element: <Layout />,
-    children: [
-      { path: ROUTES.LANDING, element: <LandingPage /> },
-      // { path: ROUTES.LOGIN, element: <LoginPage /> },
-    ],
+    children: [{ path: ROUTES.SIGNUP, element: <SignupPage /> }],
   },
 ]);
