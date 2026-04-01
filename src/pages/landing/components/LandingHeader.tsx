@@ -18,7 +18,6 @@ export default function LandingHeader() {
         <nav className="landing-header__nav">
           <a href="#feature">발표 연습</a>
           <a href="#feedback">피드백</a>
-          <a href="#pricing">요금</a>
         </nav>
 
         <div className="landing-header__actions">
