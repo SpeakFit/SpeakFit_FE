@@ -155,6 +155,27 @@
   line-height: 1;
 }
 
+.sf-helper {
+  margin: 6px 0 14px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #8a8a8a;
+}
+
+.sf-helper--error {
+  color: #dc2626;
+}
+
+.sf-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dc2626;
+}
+
+.sf-input--error {
+  border: 1px solid #dc2626;
+}
 /* Terms */
 .sf-terms {
   display: flex;
