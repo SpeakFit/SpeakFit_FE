@@ -1,0 +1,120 @@
+/* 전체 */
+.login-page {
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px;
+}
+
+.logo-text {
+  font-weight: 600;
+}
+
+/* 타이틀 */
+.login-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+/* 카드 */
+.login-card {
+  width: 512px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 필드 */
+.login-fieldset {
+  border: 1px solid #8f8f95;
+  border-radius: 3px;
+  padding: 10px 16px 14px;
+  margin: 0;
+  min-width: 0;
+  height: 68px;
+}
+
+.login-legend {
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8f8f95;
+}
+
+.login-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: #383838;
+  box-sizing: border-box;
+}
+
+.login-input::placeholder {
+  color: #a3a3a8;
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sf-eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.login-input--password {
+  padding-right: 40px;
+}
+
+/* 옵션 */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.login-options a {
+  text-decoration: none;
+  color: #666;
+}
+
+/* 버튼 */
+.login-button {
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: #444;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  opacity: 0.9;
+}
+
+/* 회원가입 */
+.signup-link {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
