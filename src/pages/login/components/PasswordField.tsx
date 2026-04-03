@@ -26,8 +26,10 @@ export default function PasswordField({ value, onChange }: Props) {
           className="sf-eye"
           type="button"
           onClick={() => setShow((v) => !v)}
+          aria-label={show ? "비밀번호 숨기기" : "비밀번호 보기"}
+          aria-pressed={show}
         >
-          <img src={eyeIcon} alt="비밀번호 보기" />
+          <img src={eyeIcon} alt="" />
         </button>
       </div>
     </fieldset>

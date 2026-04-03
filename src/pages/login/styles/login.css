@@ -58,6 +58,11 @@
   box-sizing: border-box;
 }
 
+.login-input:focus-visible {
+  outline: 2px solid #4c8dff;
+  outline-offset: 2px;
+}
+
 .login-input::placeholder {
   color: #a3a3a8;
 }
@@ -73,7 +78,6 @@
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  
   border: none;
   background: none;
   cursor: pointer;

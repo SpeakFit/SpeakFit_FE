@@ -11,18 +11,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!email || !password) return;
+
+    console.log({
+      email,
+      password,
+      keepLogin,
+    });
+  };
+
   return (
     <div className="login-page">
       <h1 className="login-title">로그인</h1>
 
-      <div className="login-card">
+      <form className="login-card" onSubmit={handleSubmit}>
         <EmailField value={email} onChange={setEmail} />
 
         <PasswordField value={password} onChange={setPassword} />
 
         <LoginOptions
           keepLogin={keepLogin}
-          onToggle={() => setKeepLogin(!keepLogin)}
+          onToggle={() => setKeepLogin((prev) => !prev)}
         />
 
         <LoginButton disabled={!email || !password} />
@@ -30,7 +42,7 @@ export default function LoginPage() {
         <p className="signup-link">
           <a href="/signup">회원가입</a>
         </p>
-      </div>
+      </form>
     </div>
   );
 }
