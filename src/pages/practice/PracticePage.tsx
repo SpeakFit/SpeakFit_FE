@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./PracticePage.css";
+import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
 import MetricCard from "./components/MetricCard";
