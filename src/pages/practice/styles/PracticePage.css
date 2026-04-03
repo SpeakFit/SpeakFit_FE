@@ -1,0 +1,270 @@
+.practice-page {
+  min-height: 100vh;
+  background: #f4f4f4;
+  color: #222;
+}
+
+.practice-page__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px 0;
+}
+
+.practice-page__logo {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.practice-page__user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.practice-page__logout {
+  border: none;
+  background: #111;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.practice-page__content {
+  padding: 0 48px 48px;
+}
+
+.practice-page__title {
+  margin: 8px 0 40px 18px;
+  font-size: 56px;
+  font-weight: 800;
+}
+
+.practice-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid #d8d8d8;
+  margin-bottom: 24px;
+}
+
+.practice-tabs__button {
+  border: none;
+  background: transparent;
+  padding: 12px 0 14px;
+  font-size: 18px;
+  color: #8d8d8d;
+  cursor: pointer;
+}
+
+.practice-tabs__button.is-active {
+  color: #222;
+  font-weight: 700;
+}
+
+.practice-page__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 36px;
+  align-items: start;
+}
+
+.practice-page__right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.script-panel {
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.script-panel__header {
+  height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ececec;
+  font-size: 16px;
+  color: #555;
+}
+
+.script-panel__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.script-panel__rec-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #c8c8c8;
+}
+
+.script-panel__rec-dot.is-on {
+  background: #ff5757;
+}
+
+.script-panel__body {
+  padding: 36px 44px;
+  min-height: 620px;
+}
+
+.script-panel__paragraph {
+  margin: 0 0 28px;
+  font-size: 28px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: #4a4a4a;
+}
+
+.metric-card {
+  background: #fff;
+  border-radius: 28px;
+  padding: 20px 24px 28px;
+  min-height: 280px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.metric-card__title {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
+}
+
+.metric-card__gauge {
+  position: relative;
+  width: 180px;
+  height: 120px;
+  margin: 0 auto 20px;
+}
+
+.metric-card__gauge-circle {
+  width: 180px;
+  height: 180px;
+  border: 12px solid #d9dde2;
+  border-bottom-color: transparent;
+  border-left-color: #d9dde2;
+  border-right-color: #d9dde2;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.metric-card__gauge-center {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 5px solid #4ec7bb;
+}
+
+.metric-card__gauge--red .metric-card__gauge-center {
+  border-color: #ef4b4b;
+}
+
+.metric-card__value {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.metric-card__value span {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.metric-card__value--mint {
+  color: #4ec7bb;
+}
+
+.metric-card__value--red {
+  color: #ef4b4b;
+}
+
+.metric-card__description {
+  margin: 0;
+  text-align: center;
+  color: #8a8a8a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.record-button-wrap {
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.record-button {
+  width: 86px;
+  height: 86px;
+  border: none;
+  border-radius: 999px;
+  background: #58cabd;
+  color: #fff;
+  font-size: 32px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(88, 202, 189, 0.25);
+}
+
+.record-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.record-button.is-recording {
+  background: #ef4b4b;
+  box-shadow: 0 8px 18px rgba(239, 75, 75, 0.25);
+}
+
+.record-button__label {
+  font-size: 16px;
+  color: #909090;
+}
+
+@media (max-width: 1200px) {
+  .practice-page__main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-page__right-column {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 900px) {
+  .practice-page__title {
+    font-size: 40px;
+  }
+
+  .practice-page__content {
+    padding: 0 20px 40px;
+  }
+
+  .script-panel__paragraph {
+    font-size: 22px;
+  }
+
+  .practice-modal__option-grid--4,
+  .practice-modal__option-grid--3,
+  .practice-modal__option-grid--5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .practice-page__right-column {
+    flex-direction: column;
+  }
+}
