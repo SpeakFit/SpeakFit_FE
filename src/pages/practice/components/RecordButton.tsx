@@ -1,3 +1,6 @@
+import micIcon from "../../../assets/mic-icon.png"
+import recordingIcon from "../../../assets/recording-icon.png"
+
 type RecordButtonProps = {
   isRecording: boolean;
   onStart: () => void;
@@ -28,11 +31,12 @@ export default function RecordButton({
         onClick={handleClick}
         disabled={disabled}
       >
-        🎤
+        <img
+          src={isRecording ? recordingIcon : micIcon}
+          alt="record"
+          className="record-button__icon"
+        />
       </button>
-      <span className="record-button__label">
-        {isRecording ? "녹음 종료" : "녹음 시작"}
-      </span>
     </div>
   );
 }
