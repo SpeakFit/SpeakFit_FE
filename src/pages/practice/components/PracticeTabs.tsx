@@ -1,5 +1,5 @@
 type PracticeTabsProps = {
-  tabs: string[];
+  tabs: readonly string[];
   activeTab: string;
   onChange: (tab: string) => void;
 };

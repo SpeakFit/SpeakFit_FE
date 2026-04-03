@@ -4,33 +4,6 @@
   color: #222;
 }
 
-.practice-page__topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 28px 32px 0;
-}
-
-.practice-page__logo {
-  font-size: 24px;
-  font-weight: 800;
-}
-
-.practice-page__user {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.practice-page__logout {
-  border: none;
-  background: #111;
-  color: #fff;
-  padding: 14px 20px;
-  border-radius: 16px;
-  cursor: pointer;
-}
-
 .practice-page__content {
   padding: 0 48px 48px;
 }

@@ -7,8 +7,9 @@ import RecordButton from "./components/RecordButton";
 import type { PracticeStage } from "./types";
 
 export default function PracticePage() {
+  const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
   const [stage, setStage] = useState<PracticeStage>("ready");
-  const [activeTab, setActiveTab] = useState("Tab Text");
+  const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
 
   const handleStartRecord = () => {
     setStage("recording");
@@ -20,24 +21,12 @@ export default function PracticePage() {
 
   return (
     <div className="practice-page">
-      {/* 상단 */}
-      <header className="practice-page__topbar">
-        <div className="practice-page__brand">
-          <div className="practice-page__logo">Speakfit</div>
-        </div>
-
-        <div className="practice-page__user">
-          <span>이나영</span>
-          <button className="practice-page__logout">로그아웃</button>
-        </div>
-      </header>
-
       {/* 본문 */}
       <main className="practice-page__content">
         <h1 className="practice-page__title">발표 연습모드</h1>
 
         <PracticeTabs
-          tabs={["Tab Text", "Tab Text"]}
+          tabs={PRACTICE_TABS}
           activeTab={activeTab}
           onChange={setActiveTab}
         />
