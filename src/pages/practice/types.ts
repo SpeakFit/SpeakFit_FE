@@ -1,0 +1,17 @@
+export type PracticeStage =
+  | "intro-modal"
+  | "ready"
+  | "recording"
+  | "record-finished"
+  | "feedback";
+
+export type AudienceAge = "어린이" | "청소년" | "성인" | "노년";
+export type AudienceKnowledge = "잘 모름" | "보통" | "잘 앎";
+export type SpeechType = "발표" | "면접" | "토론" | "강의" | "피드백 연습";
+
+export type IntroFormState = {
+  audienceAge: AudienceAge | "";
+  audienceKnowledge: AudienceKnowledge | "";
+  speechType: SpeechType | "";
+  duration: string;
+};
