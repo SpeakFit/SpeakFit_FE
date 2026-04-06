@@ -17,7 +17,7 @@ export default function ScriptPanel({
         <div className="script-panel__status">
           <span className={`script-panel__rec-dot ${isRecording ? "is-on" : ""}`} />
           <span>REC</span>
-          <span>{title}</span>
+          
         </div>
       </div>
 
