@@ -1,0 +1,17 @@
+.practice-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f4f4f4;
+}
+
+/* 내부 */
+.practice-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px 64px;
+  box-sizing: border-box;
+  gap: 120px;
+}

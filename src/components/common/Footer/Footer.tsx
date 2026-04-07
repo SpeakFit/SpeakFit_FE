@@ -31,9 +31,9 @@ export default function FooterSection() {
           <div className="landing-footer__meta">
             <a
               className="landing-footer__email"
-              href="mailto:dlsgh4090@gmail.com"
+              href="mailto:speakfit0123@gmail.com"
             >
-              문의: dlsgh4090@gmail.com
+              문의: speakfit0123@gmail.com
             </a>
             <p className="landing-footer__copyright">
               © 2024 SpeakFit. All rights reserved.

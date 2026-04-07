@@ -3,6 +3,7 @@ import { ROUTES } from "./routes.const";
 
 import FooterLayout from "../components/FooterLayout"
 import Layout from "../components/DefaultLayout";
+import PracticeLayout from "../components/PracticeLayout";
 
 import LandingPage from "../pages/landing/LandingPage";
 import SignupPage from "../pages/signup/SignupPage";
@@ -24,7 +25,7 @@ export const router = createBrowserRouter([
     children: [{path:ROUTES.LOGIN, element: <LoginPage />}],
   },
   {
-    element: <Layout />,
+    element: <PracticeLayout />,
     children: [{ path: "/practice", element: <PracticePage />}],
   },
 ]);

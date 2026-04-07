@@ -1,0 +1,59 @@
+.practice-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #f4f4f4;
+}
+
+.practice-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 24px 32px 24px 34px;
+  box-sizing: border-box;
+}
+
+/* LEFT */
+.practice-header__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.practice-header__logo {
+  width: 24px;
+  height: 24px;
+}
+
+.practice-header__brand {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.practice-header__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.practice-header__user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.practice-header__user img {
+  width: 20px;
+  height: 20px;
+}
+
+.practice-header__logout {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: #555;
+}
