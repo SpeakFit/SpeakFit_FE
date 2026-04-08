@@ -1,22 +1,47 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
 import MetricCard from "./components/MetricCard";
 import RecordButton from "./components/RecordButton";
-import type { PracticeStage } from "./types";
+import PracticeIntroModal from "./components/PracticeIntroModal";
+import type { IntroFormState, PracticeStage } from "./types";
+
+const initialForm: IntroFormState = {
+  audienceAge: "",
+  audienceKnowledge: "",
+  speechType: "",
+  duration: "",
+};
+
+const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
 
 export default function PracticePage() {
-  const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
-  const [stage, setStage] = useState<PracticeStage>("ready");
+  const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
+  const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
+
+  const isIntroComplete = useMemo(() => {
+    return (
+      !!introForm.audienceAge &&
+      !!introForm.audienceKnowledge &&
+      !!introForm.speechType &&
+      !!introForm.duration.trim()
+    );
+  }, [introForm]);
 
   const handleStartRecord = () => {
+    if (stage === "intro-modal") return;
     setStage("recording");
   };
 
   const handleStopRecord = () => {
     setStage("record-finished");
+  }
+  
+  const handleConfirmIntro = () => {
+    if (!isIntroComplete) return;
+    setStage("ready");
   };
 
   return (
@@ -75,6 +100,16 @@ BirthDateField`}
           onStart={handleStartRecord}
           onStop={handleStopRecord}
         />
+
+        {/* 인트로 모달 */}
+        {stage === "intro-modal" && (
+          <PracticeIntroModal
+            form={introForm}
+            onChange={setIntroForm}
+            onConfirm={handleConfirmIntro}
+            isConfirmEnabled={isIntroComplete}
+          />
+        )}
       </main>
     </div>
   );
