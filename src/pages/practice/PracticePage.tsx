@@ -22,11 +22,15 @@ export default function PracticePage() {
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
 
   const isIntroComplete = useMemo(() => {
+    const durationNumber = Number(introForm.duration);
+
     return (
       !!introForm.audienceAge &&
       !!introForm.audienceKnowledge &&
       !!introForm.speechType &&
-      !!introForm.duration.trim()
+      !!introForm.duration.trim() &&
+      durationNumber >= 1 &&
+      durationNumber <= 60
     );
   }, [introForm]);
 

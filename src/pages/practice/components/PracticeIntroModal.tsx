@@ -19,12 +19,35 @@ export default function PracticeIntroModal({
 }: PracticeIntroModalProps) {
   const updateField = <K extends keyof IntroFormState>(
     key: K,
-    value: IntroFormState[K]
+    value: IntroFormState[K],
   ) => {
     onChange({
       ...form,
       [key]: value,
     });
+  };
+
+  const updateDuration = (value: string) => {
+    if (value === "") {
+      updateField("duration", "");
+      return;
+    }
+
+    const numericValue = Number(value);
+
+    if (Number.isNaN(numericValue)) return;
+
+    if (numericValue < 1) {
+      updateField("duration", "1");
+      return;
+    }
+
+    if (numericValue > 60) {
+      updateField("duration", "60");
+      return;
+    }
+
+    updateField("duration", value);
   };
 
   return (
@@ -108,9 +131,10 @@ export default function PracticeIntroModal({
                 <input
                   type="number"
                   min="1"
+                  max="60"
                   inputMode="numeric"
                   value={form.duration}
-                  onChange={(e) => updateField("duration", e.target.value)}
+                  onChange={(e) => updateDuration(e.target.value)}
                   className="practice-modal__duration-input"
                 />
                 <span>분</span>
