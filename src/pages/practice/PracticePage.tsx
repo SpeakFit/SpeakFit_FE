@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
@@ -21,6 +21,24 @@ export default function PracticePage() {
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
+  
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (stage !== "recording") return;
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [stage]);
+
+  const formattedTime = useMemo(() => {
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }, [elapsedSeconds]);
 
   // 임시값: 나중에 실제 발화속도 계산 로직 붙이면 됨
   const [speechRate, setSpeechRate] = useState<number | null>(null);
@@ -100,6 +118,7 @@ BirthDateFieldd
 BirthDateField
 BirthDateField`}
             isRecording={isRecording}
+            time={formattedTime}
           />
 
           <div className="practice-page__right-column">
