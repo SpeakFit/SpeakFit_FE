@@ -27,10 +27,14 @@ const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서�
 중요한 부분에서 강조가 부족한 문제들이 있지만, 이를 스스로 인식하기는 쉽지 않습니다.`;
 
 export default function PracticePage() {
-  const [stage, setStage] = useState<PracticeStage>("intro-modal");
+  const [stage, setStage] = useState<PracticeStage>("ready");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timeExceededType, setTimeExceededType] = useState<
+    "initial" | "periodic" | "max" | null
+  >(null);
+  const [nextTriggerTime, setNextTriggerTime] = useState<number | null>(null);
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -59,11 +63,42 @@ export default function PracticePage() {
     if (status !== "recording") return;
 
     const timer = window.setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
+      setElapsedSeconds((prev) => {
+        const newElapsed = prev + 1;
+        const durationNumber = Number(introForm.duration);
+        const maxSeconds = durationNumber * 60;
+        const totalMax = 3600;
+
+        if (newElapsed >= totalMax) {
+          hookPauseRecording();
+          setTimeExceededType("max");
+          return newElapsed;
+        }
+
+        if (nextTriggerTime && newElapsed === nextTriggerTime) {
+          hookPauseRecording();
+
+          if (nextTriggerTime === maxSeconds) {
+            setTimeExceededType("initial");
+          } else {
+            setTimeExceededType("periodic");
+          }
+
+          return newElapsed;
+        }
+
+        return newElapsed;
+      });
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [status]);
+  }, [
+    status,
+    introForm.duration,
+    timeExceededType,
+    nextTriggerTime,
+    hookPauseRecording,
+  ]);
 
   const formattedTime = useMemo(() => {
     const minutes = Math.floor(elapsedSeconds / 60);
@@ -92,15 +127,13 @@ export default function PracticePage() {
   };
 
   const startRecording = async () => {
-    if (stage === "intro-modal") return;
+    const durationNumber = Number(introForm.duration);
+    const maxSeconds = durationNumber * 60;
+    setElapsedSeconds(0);
+    setNextTriggerTime(maxSeconds);
 
-    try {
-      setElapsedSeconds(0);
-      await hookStartRecording();
-      setStage("recording");
-    } catch (error) {
-      console.error("마이크 권한 오류", error);
-    }
+    await hookStartRecording();
+    setStage("recording");
   };
 
   const pauseRecording = () => {
@@ -216,6 +249,47 @@ export default function PracticePage() {
             onConfirm={handleConfirmIntro}
             isConfirmEnabled={isIntroComplete}
           />
+        )}
+
+        {timeExceededType && (
+          <div className="practice-modal-overlay">
+            <div className="practice-modal">
+              <div className="practice-modal__header">
+                <h2>시간 초과 안내</h2>
+                <p>
+                  {timeExceededType === "initial" &&
+                    "예상 시간이 초과되었습니다. 계속해서 연습을 진행하시겠습니까?"}
+                  {timeExceededType === "periodic" &&
+                    "10분이 지났습니다. 발표를 계속 하겠습니까?"}
+                  {timeExceededType === "max" &&
+                    "발표 녹음에 대한 최대 사용 시간이 초과되었습니다. 피드백 화면으로 넘어갑니다."}
+                </p>
+              </div>
+              <div className="practice-modal__footer">
+                {timeExceededType !== "max" && (
+                  <button
+                    className="practice-modal__confirm is-enabled"
+                    onClick={() => {
+                      hookResumeRecording();
+                      setTimeExceededType(null);
+                      setNextTriggerTime(elapsedSeconds + 600); // 다음 초과 시점 10분 후로 설정
+                    }}
+                  >
+                    계속하기
+                  </button>
+                )}
+                <button
+                  className="practice-modal__confirm is-enabled"
+                  onClick={() => {
+                    setTimeExceededType(null);
+                    handleFinishRecord();
+                  }}
+                >
+                  발표 완료
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

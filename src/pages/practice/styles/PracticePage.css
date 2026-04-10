@@ -452,7 +452,8 @@
 .practice-modal__footer {
   display: flex;
   justify-content: center;
-  padding: 8px 40px 34px;
+  gap: 12px;
+  padding: 32px 40px 34px;
 }
 
 .practice-modal__confirm {
