@@ -159,7 +159,7 @@
   margin-bottom: 8px;
 }
 
-.metric-card__value span {
+.metric-card__value .metric-card__unit {
   font-size: 18px;
   font-weight: 600;
 }
@@ -209,11 +209,39 @@
   object-fit: contain;
 }
 
-.record-button.is-recording {
-  background: #ef4b4b;
-  box-shadow: 0 10px 24px rgba(239, 75, 75, 0.35);
+/* 버튼 영역 (항상 동일 위치) */
+.practice-page__record-controls {
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  z-index: 100;
+
+  display: flex;
+  gap: 12px;
 }
 
+/* 공통 버튼 */
+.practice-page__btn {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 서브 버튼 (일시정지 / 재개) */
+.practice-page__btn--sub {
+  background: #2a2f3a;
+  color: #fff;
+}
+
+/* 메인 버튼 (발표 완료) */
+.practice-page__btn--primary {
+  background: #00c2a8;
+  color: #fff;
+}
 
 @media (max-width: 1200px) {
   .practice-page__main-grid {
@@ -263,7 +291,7 @@
     margin-bottom: 6px;
   }
 
-  .metric-card__value span {
+  .metric-card__value .metric-card__unit {
     font-size: 15px;
   }
 
@@ -388,7 +416,10 @@
   font-weight: 600;
   color: #333;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .practice-chip.is-selected {

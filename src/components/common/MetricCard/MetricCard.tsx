@@ -31,7 +31,7 @@ export default function MetricCard({
       </div>
 
       <div className={`metric-card__value metric-card__value--${tone}`}>
-        {value} <span>{unit}</span>
+        {value} <span className="metric-card__unit">{unit}</span>
       </div>
 
       <p className="metric-card__description">{description}</p>

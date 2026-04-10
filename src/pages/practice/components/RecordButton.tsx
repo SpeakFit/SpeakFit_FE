@@ -1,41 +1,23 @@
-import micIcon from "../../../assets/mic-icon.png"
-import recordingIcon from "../../../assets/recording-icon.png"
+import micIcon from "../../../assets/mic-icon.png";
 
 type RecordButtonProps = {
-  isRecording: boolean;
-  onStart: () => void;
-  onStop: () => void;
+  onClick: () => void;
   disabled?: boolean;
 };
 
 export default function RecordButton({
-  isRecording,
-  onStart,
-  onStop,
+  onClick,
   disabled = false,
 }: RecordButtonProps) {
-  const handleClick = () => {
-    if (disabled) return;
-    if (isRecording) {
-      onStop();
-      return;
-    }
-    onStart();
-  };
-
   return (
     <div className="record-button-wrap">
       <button
-        className={`record-button ${isRecording ? "is-recording" : ""}`}
+        className="record-button"
         type="button"
-        onClick={handleClick}
+        onClick={onClick}
         disabled={disabled}
       >
-        <img
-          src={isRecording ? recordingIcon : micIcon}
-          alt="record"
-          className="record-button__icon"
-        />
+        <img src={micIcon} alt="record" className="record-button__icon" />
       </button>
     </div>
   );

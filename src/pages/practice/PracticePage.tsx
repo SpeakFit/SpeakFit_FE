@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
-import MetricCard from "@/components/common/MetricCard/MetricCard.tsx";
+import MetricCard from "../../components/common/MetricCard/MetricCard";
 import RecordButton from "./components/RecordButton";
 import PracticeIntroModal from "./components/PracticeIntroModal";
 import useAudioMeter from "./hooks/useAudioMeter";
@@ -17,31 +17,20 @@ const initialForm: IntroFormState = {
 
 const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
 
+const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서비스 SpeakFit을 개발하고 있는 팀입니다.
+오늘은 저희 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.
+
+발표를 준비할 때 대부분의 사람들은 내용 위주로만 연습하고,
+자신의 말하기 습관이나 전달력은 객관적으로 확인하기 어렵습니다.
+
+예를 들어, 말을 너무 빠르게 한다거나, 불필요한 추임새를 반복한다거나,
+중요한 부분에서 강조가 부족한 문제들이 있지만, 이를 스스로 인식하기는 쉽지 않습니다.`;
+
 export default function PracticePage() {
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
-  
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  useEffect(() => {
-    if (stage !== "recording") return;
-
-    const timer = window.setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [stage]);
-
-  const formattedTime = useMemo(() => {
-    const minutes = Math.floor(elapsedSeconds / 60);
-    const seconds = elapsedSeconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }, [elapsedSeconds]);
-
-  // 임시값: 나중에 실제 발화속도 계산 로직 붙이면 됨
-  const [speechRate, setSpeechRate] = useState<number | null>(null);
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -56,39 +45,88 @@ export default function PracticePage() {
     );
   }, [introForm]);
 
-  const { isRecording, volumeLevel, startRecording, stopRecording } =
-    useAudioMeter();
+  const {
+    status,
+    isRecording,
+    volumeLevel,
+    startRecording: hookStartRecording,
+    pauseRecording: hookPauseRecording,
+    resumeRecording: hookResumeRecording,
+    stopRecording,
+  } = useAudioMeter();
 
-  const handleRecordClick = async () => {
-    if (stage === "intro-modal") return;
+  useEffect(() => {
+    if (status !== "recording") return;
 
-    if (isRecording) {
-      stopRecording();
-      setStage("record-finished");
-      setSpeechRate(0); // 임시 초기화
-      return;
-    }
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
 
-    try {
-      await startRecording();
-      setStage("recording");
+    return () => window.clearInterval(timer);
+  }, [status]);
 
-      // 임시 데모값
-      setSpeechRate(132);
-    } catch (error) {
-      console.error("마이크 권한 오류", error);
-    }
-  };
+  const formattedTime = useMemo(() => {
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0",
+    )}`;
+  }, [elapsedSeconds]);
+
   const speechRateDisplay = useMemo(() => {
-    if (stage === "recording") return "측정 중...";
-    if (stage === "record-finished") return "분석 중...";
-    if (speechRate !== null) return String(speechRate);
+    // TODO: BE STT 분석 결과 연동
+    // - 녹음 완료 후 recordId 기준으로 분석 요청
+    // - Analysis_Result.avg_wpm 값을 받아와 표시
+    // - 현재는 UI placeholder만 표시
+    if (stage === "recording") return "측정 중";
+    if (stage === "paused") return "일시정지";
+    if (stage === "record-finished") return "분석 중";
     return "--";
-  }, [stage, speechRate]);
+  }, [stage]);
 
   const handleConfirmIntro = () => {
     if (!isIntroComplete) return;
     setStage("ready");
+  };
+
+  const startRecording = async () => {
+    if (stage === "intro-modal") return;
+
+    try {
+      setElapsedSeconds(0);
+      await hookStartRecording();
+      setStage("recording");
+    } catch (error) {
+      console.error("마이크 권한 오류", error);
+    }
+  };
+
+  const pauseRecording = () => {
+    hookPauseRecording();
+    setStage("paused");
+  };
+
+  const resumeRecording = () => {
+    hookResumeRecording();
+    setStage("recording");
+  };
+
+  const handleFinishRecord = async () => {
+    try {
+      const finalBlob = await stopRecording();
+      setStage("record-finished");
+
+      // TODO: 백엔드 연동 후 finalBlob을 FormData로 업로드
+      // const formData = new FormData();
+      // formData.append("audio", finalBlob, "practice-recording.webm");
+      // await uploadPracticeAudio(formData);
+
+      console.log("최종 녹음 Blob", finalBlob);
+    } catch (error) {
+      console.error("녹음 종료 오류", error);
+    }
   };
 
   return (
@@ -105,18 +143,7 @@ export default function PracticePage() {
         <section className="practice-page__main-grid">
           <ScriptPanel
             title="Title"
-            script={`안녕하세요. 저희는 발표 연습을 돕는 웹 서비스 SpeakFit을 개발하고 있는 팀입니다.
-오늘은 저희 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.
-
-발표를 준비할 때 대부분의 사람들은 내용 위주로만 연습하고,
-자신의 말하기 습관이나 전달력은 객관적으로 확인하기 어렵습니다.
-
-예를 들어, 말을 너무 빠르게 한다거나, 불필요한 추임새를 반복한다거나,
-중요한 부분에서 강조가 부족한 문제들이 있지만, 이를 스스로 인식하기는 쉽지 않습니다.
-dfdfd
-BirthDateFieldd
-BirthDateField
-BirthDateField`}
+            script={SCRIPT_TEXT}
             isRecording={isRecording}
             time={formattedTime}
           />
@@ -125,28 +152,62 @@ BirthDateField`}
             <MetricCard
               title="발화 속도"
               value={speechRateDisplay}
-              unit={speechRate ? "WPM" : ""}
-              description="녹음 후 분석 결과가 표시됩니다."
+              unit={speechRateDisplay === "--" ? "" : ""}
+              description="녹음 후 백엔드 분석 결과가 표시됩니다."
               tone="mint"
-              level={speechRate ? Math.min(100, Math.round((speechRate / 180) * 100)) : 0}
+              level={0}
             />
 
             <MetricCard
               title="목소리 크기"
               value={String(volumeLevel)}
               unit="dB"
-              description="녹음을 시작하면 데시벨이 측정됩니다."
+              description="녹음 중 실시간으로 표시됩니다."
               tone="red"
-              level={Math.min(100, volumeLevel)}
-            />
-
-            <RecordButton
-              isRecording={isRecording}
-              onStart={handleRecordClick}
-              onStop={handleRecordClick}
+              level={volumeLevel}
             />
           </div>
         </section>
+
+        <div className="practice-page__record-controls">
+          {stage === "ready" && <RecordButton onClick={startRecording} />}
+
+          {stage === "recording" && (
+            <>
+              <button
+                className="practice-page__btn practice-page__btn--sub"
+                onClick={pauseRecording}
+              >
+                일시 정지
+              </button>
+
+              <button
+                className="practice-page__btn practice-page__btn--primary"
+                onClick={handleFinishRecord}
+              >
+                발표 완료
+              </button>
+            </>
+          )}
+
+          {stage === "paused" && (
+            <>
+              <button
+                className="practice-page__btn practice-page__btn--sub"
+                onClick={resumeRecording}
+              >
+                녹음 재개
+              </button>
+
+              <button
+                className="practice-page__btn practice-page__btn--primary"
+                onClick={handleFinishRecord}
+              >
+                발표 완료
+              </button>
+            </>
+          )}
+        </div>
 
         {stage === "intro-modal" && (
           <PracticeIntroModal
