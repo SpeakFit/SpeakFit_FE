@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
-import MetricCard from "./components/MetricCard";
+import MetricCard from "@/components/common/MetricCard/MetricCard.tsx";
 import RecordButton from "./components/RecordButton";
 import PracticeIntroModal from "./components/PracticeIntroModal";
+import useAudioMeter from "./hooks/useAudioMeter";
 import type { IntroFormState, PracticeStage } from "./types";
 
 const initialForm: IntroFormState = {
@@ -21,6 +22,9 @@ export default function PracticePage() {
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
 
+  // 임시값: 나중에 실제 발화속도 계산 로직 붙이면 됨
+  const [speechRate, setSpeechRate] = useState<number | null>(null);
+
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
 
@@ -34,15 +38,36 @@ export default function PracticePage() {
     );
   }, [introForm]);
 
-  const handleStartRecord = () => {
-    if (stage === "intro-modal") return;
-    setStage("recording");
-  };
+  const { isRecording, volumeLevel, startRecording, stopRecording } =
+    useAudioMeter();
 
-  const handleStopRecord = () => {
-    setStage("record-finished");
-  }
-  
+  const handleRecordClick = async () => {
+    if (stage === "intro-modal") return;
+
+    if (isRecording) {
+      stopRecording();
+      setStage("record-finished");
+      setSpeechRate(0); // 임시 초기화
+      return;
+    }
+
+    try {
+      await startRecording();
+      setStage("recording");
+
+      // 임시 데모값
+      setSpeechRate(132);
+    } catch (error) {
+      console.error("마이크 권한 오류", error);
+    }
+  };
+  const speechRateDisplay = useMemo(() => {
+    if (stage === "recording") return "측정 중...";
+    if (stage === "record-finished") return "분석 중...";
+    if (speechRate !== null) return String(speechRate);
+    return "--";
+  }, [stage, speechRate]);
+
   const handleConfirmIntro = () => {
     if (!isIntroComplete) return;
     setStage("ready");
@@ -50,7 +75,6 @@ export default function PracticePage() {
 
   return (
     <div className="practice-page">
-      {/* 본문 */}
       <main className="practice-page__content">
         <h1 className="practice-page__title">발표 연습모드</h1>
 
@@ -61,7 +85,6 @@ export default function PracticePage() {
         />
 
         <section className="practice-page__main-grid">
-          {/* 왼쪽 스크립트 */}
           <ScriptPanel
             title="Title"
             script={`안녕하세요. 저희는 발표 연습을 돕는 웹 서비스 SpeakFit을 개발하고 있는 팀입니다.
@@ -76,36 +99,36 @@ dfdfd
 BirthDateFieldd
 BirthDateField
 BirthDateField`}
-            isRecording={stage === "recording"}
+            isRecording={isRecording}
           />
 
-          {/* 오른쪽 지표 */}
           <div className="practice-page__right-column">
             <MetricCard
               title="발화 속도"
-              value="0"
-              unit="WPM"
-              description="녹음을 시작하면 발화 속도가 측정됩니다."
+              value={speechRateDisplay}
+              unit={speechRate ? "WPM" : ""}
+              description="녹음 후 분석 결과가 표시됩니다."
               tone="mint"
+              level={speechRate ? Math.min(100, Math.round((speechRate / 180) * 100)) : 0}
             />
+
             <MetricCard
               title="목소리 크기"
-              value="0"
+              value={String(volumeLevel)}
               unit="dB"
               description="녹음을 시작하면 데시벨이 측정됩니다."
               tone="red"
+              level={Math.min(100, volumeLevel)}
+            />
+
+            <RecordButton
+              isRecording={isRecording}
+              onStart={handleRecordClick}
+              onStop={handleRecordClick}
             />
           </div>
         </section>
 
-        {/* 녹음 버튼 */}
-        <RecordButton
-          isRecording={stage === "recording"}
-          onStart={handleStartRecord}
-          onStop={handleStopRecord}
-        />
-
-        {/* 인트로 모달 */}
         {stage === "intro-modal" && (
           <PracticeIntroModal
             form={introForm}
