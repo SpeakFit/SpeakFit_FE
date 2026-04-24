@@ -227,13 +227,17 @@ export default function useAudioMeter(): UseAudioMeterResult {
   useEffect(() => {
     return () => {
       cleanupStream();
-      cleanupAudioNodes();
-
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
+      void cleanupAudioNodes();
     };
-  }, [audioUrl, cleanupAudioNodes, cleanupStream]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Revoke the previous object URL whenever it changes or on unmount.
+  useEffect(() => {
+    if (!audioUrl) return;
+    return () => {
+      URL.revokeObjectURL(audioUrl);
+    };
+  }, [audioUrl]);
 
   return {
     status,

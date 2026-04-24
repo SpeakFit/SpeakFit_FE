@@ -302,6 +302,7 @@ export default function PracticePage() {
                     className="practice-modal__confirm is-enabled"
                     onClick={() => {
                       hookResumeRecording();
+                      setStage("recording");
                       setTimeExceededType(null);
                       setNextTriggerTime(elapsedSeconds + 600); // 다음 초과 시점 10분 후로 설정
                     }}
