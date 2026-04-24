@@ -2,8 +2,8 @@ export type PracticeStage =
   | "intro-modal"
   | "ready"
   | "recording"
-  | "record-finished"
-  | "feedback";
+  | "paused"
+  | "record-finished";
 
 export type AudienceAge = "어린이" | "청소년" | "성인" | "노년";
 export type AudienceKnowledge = "잘 모름" | "보통" | "잘 앎";
