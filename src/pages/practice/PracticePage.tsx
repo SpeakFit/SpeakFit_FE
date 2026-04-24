@@ -110,6 +110,14 @@ export default function PracticePage() {
     )}`;
   }, [elapsedSeconds]);
 
+  const recordingStatusText = useMemo(() => {
+    if (stage === "intro-modal" || stage === "ready") return "녹음 전";
+    if (stage === "recording") return "녹음 중";
+    if (stage === "paused") return "일시정지";
+    if (stage === "record-finished") return "녹음 완료";
+    return "녹음 전";
+  }, [stage]);
+
   const speechRateDisplay = useMemo(() => {
     // TODO: BE STT 분석 결과 연동
     // - 녹음 완료 후 recordId 기준으로 분석 요청
@@ -177,8 +185,9 @@ export default function PracticePage() {
           <ScriptPanel
             title="Title"
             script={SCRIPT_TEXT}
-            isRecording={isRecording}
             time={formattedTime}
+            isRecording={isRecording}
+            statusText={recordingStatusText}
           />
 
           <div className="practice-page__right-column">

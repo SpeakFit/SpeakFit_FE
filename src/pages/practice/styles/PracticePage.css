@@ -72,14 +72,31 @@
 }
 
 .script-panel__status {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px 12px 40px;
   align-items: center;
   gap: 10px;
+  justify-content: end;
+  white-space: nowrap;
+}
+
+.script-panel__status-text {
+  font-size: 13px;
+  text-align: left;
+  min-width: 0;
+}
+
+.script-panel__time {
+  text-align: right;
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .script-panel__rec-dot {
   width: 12px;
   height: 12px;
+  justify-self: center;
   border-radius: 999px;
   background: #c8c8c8;
 }

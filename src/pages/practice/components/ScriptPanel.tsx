@@ -2,6 +2,7 @@ type ScriptPanelProps = {
   title: string;
   script: string;
   isRecording: boolean;
+  statusText: string;
   time: string;
 };
 
@@ -9,6 +10,7 @@ export default function ScriptPanel({
   title,
   script,
   isRecording,
+  statusText,
   time,
 }: ScriptPanelProps) {
   return (
@@ -17,9 +19,9 @@ export default function ScriptPanel({
         <span>{title}</span>
 
         <div className="script-panel__status">
+          <span className="script-panel__time">{time}</span>
           <span className={`script-panel__rec-dot ${isRecording ? "is-on" : ""}`} />
-          <span>REC {time}</span>
-          
+          <span className="script-panel__status-text">{statusText}</span>
         </div>
       </div>
 
