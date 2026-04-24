@@ -72,12 +72,14 @@ export default function PracticePage() {
 
         if (newElapsed >= totalMax) {
           hookPauseRecording();
+          setStage("paused");
           setTimeExceededType("max");
           return newElapsed;
         }
 
         if (nextTriggerTime && newElapsed === nextTriggerTime) {
           hookPauseRecording();
+          setStage("paused");
 
           if (nextTriggerTime === maxSeconds) {
             setTimeExceededType("initial");
