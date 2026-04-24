@@ -53,6 +53,7 @@ export default function PracticePage() {
     status,
     isRecording,
     volumeLevel,
+    recordingError,
     startRecording: hookStartRecording,
     pauseRecording: hookPauseRecording,
     resumeRecording: hookResumeRecording,
@@ -140,7 +141,12 @@ export default function PracticePage() {
     setElapsedSeconds(0);
     setNextTriggerTime(maxSeconds);
 
-    await hookStartRecording();
+    const didStart = await hookStartRecording();
+    if (!didStart) {
+      setNextTriggerTime(null);
+      return;
+    }
+
     setStage("recording");
   };
 
@@ -250,6 +256,10 @@ export default function PracticePage() {
             </>
           )}
         </div>
+
+        {recordingError && (
+          <p className="practice-page__recording-error">{recordingError}</p>
+        )}
 
         {stage === "intro-modal" && (
           <PracticeIntroModal

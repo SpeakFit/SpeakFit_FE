@@ -8,7 +8,8 @@ type UseAudioMeterResult = {
   volumeLevel: number;
   audioBlob: Blob | null;
   audioUrl: string | null;
-  startRecording: () => Promise<void>;
+  recordingError: string | null;
+  startRecording: () => Promise<boolean>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   stopRecording: () => Promise<Blob | null>;
@@ -19,6 +20,7 @@ export default function useAudioMeter(): UseAudioMeterResult {
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -87,58 +89,85 @@ export default function useAudioMeter(): UseAudioMeterResult {
   }, [stopMeterLoop]);
 
   const startRecording = useCallback(async () => {
-    if (status !== "idle") return;
+    if (status !== "idle") return false;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    streamRef.current = stream;
+    setRecordingError(null);
 
-    const mimeTypeCandidates = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/mp4",
-    ];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
-    const supportedMimeType =
-      mimeTypeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) ??
-      "";
+      const mimeTypeCandidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+      ];
 
-    mimeTypeRef.current = supportedMimeType;
+      const supportedMimeType =
+        mimeTypeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) ??
+        "";
 
-    const mediaRecorder = supportedMimeType
-      ? new MediaRecorder(stream, { mimeType: supportedMimeType })
-      : new MediaRecorder(stream);
+      mimeTypeRef.current = supportedMimeType;
 
-    mediaRecorderRef.current = mediaRecorder;
-    audioChunksRef.current = [];
-    setAudioBlob(null);
+      const mediaRecorder = supportedMimeType
+        ? new MediaRecorder(stream, { mimeType: supportedMimeType })
+        : new MediaRecorder(stream);
 
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
-      setAudioUrl(null);
-    }
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      setAudioBlob(null);
 
-    mediaRecorder.ondataavailable = (event: BlobEvent) => {
-      if (event.data && event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
       }
-    };
 
-    mediaRecorder.start();
+      mediaRecorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-    const audioContext = new AudioContext();
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
+      mediaRecorder.start();
 
-    const sourceNode = audioContext.createMediaStreamSource(stream);
-    sourceNode.connect(analyser);
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
 
-    audioContextRef.current = audioContext;
-    analyserRef.current = analyser;
-    sourceNodeRef.current = sourceNode;
+      const sourceNode = audioContext.createMediaStreamSource(stream);
+      sourceNode.connect(analyser);
 
-    setStatus("recording");
-    startMeterLoop();
-  }, [audioUrl, startMeterLoop, status]);
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      sourceNodeRef.current = sourceNode;
+
+      setStatus("recording");
+      startMeterLoop();
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "마이크 권한을 확인한 뒤 다시 시도해주세요.";
+
+      setStatus("idle");
+      mediaRecorderRef.current = null;
+      audioChunksRef.current = [];
+      mimeTypeRef.current = "";
+      setAudioBlob(null);
+
+      cleanupStream();
+      await cleanupAudioNodes();
+
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+
+      setRecordingError(message);
+      return false;
+    }
+  }, [audioUrl, cleanupAudioNodes, cleanupStream, startMeterLoop, status]);
 
   const pauseRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -212,6 +241,7 @@ export default function useAudioMeter(): UseAudioMeterResult {
     volumeLevel,
     audioBlob,
     audioUrl,
+    recordingError,
     startRecording,
     pauseRecording,
     resumeRecording,
