@@ -232,7 +232,6 @@
   right: 40px;
   bottom: 40px;
   z-index: 100;
-
   display: flex;
   gap: 12px;
 }
