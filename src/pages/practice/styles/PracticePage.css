@@ -38,163 +38,263 @@
 
 .practice-page__main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 36px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 40px;
+  align-items: stretch;
 }
 
 .practice-page__right-column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
+  height: 100%;
 }
 
 .script-panel {
   background: #fff;
-  border-radius: 28px;
+  border: 1px solid #edf1f4;
+  border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  height: calc(100vh - 280px);
+  box-shadow: 0 14px 40px rgba(72, 85, 106, 0.12);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .script-panel__header {
-  height: 56px;
-  padding: 0 24px;
+  min-height: 62px;
+  padding: 18px 34px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ececec;
-  font-size: 16px;
-  color: #555;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 17px;
+  color: #707784;
   flex-shrink: 0;
+}
+
+.script-panel__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #5c6470;
 }
 
 .script-panel__status {
   display: grid;
-  grid-template-columns: 48px 12px 40px;
+  grid-template-columns: 12px 36px 78px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   justify-content: end;
   white-space: nowrap;
 }
 
 .script-panel__status-text {
-  font-size: 13px;
+  font-size: 18px;
+  font-weight: 500;
   text-align: left;
   min-width: 0;
+  color: #666a73;
 }
 
 .script-panel__time {
   text-align: right;
-  justify-self: end;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: #666a73;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
 .script-panel__rec-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   justify-self: center;
   border-radius: 999px;
-  background: #c8c8c8;
+  background: #b8bcc3;
 }
 
 .script-panel__rec-dot.is-on {
-  background: #ff5757;
+  background: #ff626f;
 }
 
 .script-panel__body {
-  padding: 28px 32px;
+  padding: 54px 64px 48px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    linear-gradient(180deg, rgba(244, 248, 252, 0.82) 0%, rgba(255, 255, 255, 0) 36px),
+    #ffffff;
 }
 
 .script-panel__paragraph {
-  margin: 0 0 28px;
-  font-size: 28px;
-  line-height: 1.55;
+  margin: 0 0 36px;
+  font-size: 27px;
+  line-height: 1.7;
   font-weight: 500;
-  color: #4a4a4a;
+  letter-spacing: -0.02em;
+  color: #202938;
+}
+
+.script-panel__footer {
+  border-top: 1px solid #edf1f4;
+  padding: 16px 34px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+}
+
+.script-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 36px;
+  color: #68707d;
+  font-size: 14px;
+}
+
+.script-panel__legend-item.is-accent {
+  color: #33cbbd;
+  font-weight: 700;
+}
+
+.script-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.script-panel__toggle-label {
+  font-size: 14px;
+  color: #7a838f;
+}
+
+.script-panel__toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ecfbf8;
+  border: 1px solid #bdebe3;
+}
+
+.script-panel__toggle-option {
+  min-width: 44px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #8aa09b;
+}
+
+.script-panel__toggle-option.is-on {
+  background: linear-gradient(180deg, #54d8cb 0%, #35cbbd 100%);
+  color: #fff;
 }
 
 .metric-card {
   background: #fff;
-  border-radius: 28px;
-  padding: 20px 24px 28px;
-  min-height: 280px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid #edf1f4;
+  border-radius: 32px;
+  padding: 34px 32px 30px;
+  min-height: 394px;
+  box-shadow: 0 14px 40px rgba(72, 85, 106, 0.12);
 }
 
 .metric-card__title {
   margin: 0 0 18px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  color: #666;
+  color: #666f7d;
 }
 
 .metric-card__gauge {
   position: relative;
-  width: 180px;
-  height: 120px;
-  margin: 0 auto 20px;
+  width: 100%;
+  max-width: 270px;
+  margin: 12px auto 22px;
 }
 
-.metric-card__gauge-circle {
-  width: 180px;
-  height: 180px;
-  border: 12px solid #d9dde2;
-  border-bottom-color: transparent;
-  border-left-color: #d9dde2;
-  border-right-color: #d9dde2;
-  border-radius: 50%;
-  box-sizing: border-box;
+.metric-card__gauge-svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.metric-card__gauge-center {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  transform: translateX(-50%);
-  background: #fff;
-  border: 5px solid #4ec7bb;
+.metric-card__gauge-track,
+.metric-card__gauge-progress {
+  fill: none;
+  stroke-width: 14;
+  stroke-linecap: round;
 }
 
-.metric-card__gauge--red .metric-card__gauge-center {
-  border-color: #ef4b4b;
+.metric-card__gauge-track {
+  stroke: #dfe7f2;
 }
 
 .metric-card__value {
+  position: absolute;
+  inset: 44% 0 auto;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   text-align: center;
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 8px;
 }
 
-.metric-card__value .metric-card__unit {
-  font-size: 18px;
-  font-weight: 600;
+.metric-card__value-number {
+  font-size: 44px;
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  padding-top: 50px;
 }
 
 .metric-card__value--mint {
-  color: #4ec7bb;
+  color: #2ccdc0;
 }
 
 .metric-card__value--red {
-  color: #ef4b4b;
+  color: #ff6472;
+}
+
+.metric-card__gauge-progress--mint {
+  stroke: #2ccdc0;
+}
+
+.metric-card__gauge-progress--red {
+  stroke: #ff6472;
+}
+
+.metric-card__unit {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  color: #95a4bc;
 }
 
 .metric-card__description {
   margin: 0;
   text-align: center;
-  color: #8a8a8a;
-  font-size: 14px;
-  line-height: 1.5;
+  color: #7f8999;
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: keep-all;
 }
 
 .record-button-wrap {
@@ -273,58 +373,56 @@
 
 @media (max-width: 1200px) {
   .practice-page__main-grid {
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 20px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 24px;
+    align-items: stretch;
   }
 
   .practice-page__right-column {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+  }
+
+  .script-panel__body {
+    padding: 42px 36px 36px;
+  }
+
+  .script-panel__paragraph {
+    font-size: 23px;
+  }
+
+  .script-panel__footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .metric-card {
-    padding: 16px 16px 20px;
+    padding: 28px 22px 24px;
     border-radius: 24px;
-    min-height: 240px;
+    min-height: 330px;
   }
 
   .metric-card__title {
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     font-size: 14px;
   }
 
   .metric-card__gauge {
-    width: 150px;
-    height: 95px;
-    margin: 0 auto 14px;
+    max-width: 220px;
+    margin-bottom: 18px;
   }
 
-  .metric-card__gauge-circle {
-    width: 150px;
-    height: 150px;
-    border-width: 10px;
+  .metric-card__value-number {
+    font-size: 56px;
   }
 
-  .metric-card__gauge-center {
-    width: 20px;
-    height: 20px;
-    bottom: 6px;
-    border-width: 4px;
-  }
-
-  .metric-card__value {
-    font-size: 24px;
-    margin-bottom: 6px;
-  }
-
-  .metric-card__value .metric-card__unit {
-    font-size: 15px;
+  .metric-card__unit {
+    font-size: 22px;
   }
 
   .metric-card__description {
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.45;
     word-break: keep-all;
   }
@@ -339,8 +437,31 @@
     padding: 0 20px 40px;
   }
 
+  .practice-page__main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .script-panel__header {
+    padding: 16px 20px 14px;
+  }
+
+  .script-panel__status {
+    grid-template-columns: 12px 34px 66px;
+    gap: 8px;
+  }
+
+  .script-panel__status-text,
+  .script-panel__time {
+    font-size: 15px;
+  }
+
+  .script-panel__body {
+    padding: 28px 20px 28px;
+  }
+
   .script-panel__paragraph {
     font-size: 22px;
+    line-height: 1.6;
   }
 
   .practice-modal__option-grid--4,
@@ -351,6 +472,10 @@
 
   .practice-page__right-column {
     flex-direction: column;
+  }
+
+  .metric-card {
+    min-height: auto;
   }
 }
 

@@ -24,13 +24,21 @@ const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서�
 자신의 말하기 습관이나 전달력은 객관적으로 확인하기 어렵습니다.
 
 예를 들어, 말을 너무 빠르게 한다거나, 불필요한 추임새를 반복한다거나,
-중요한 부분에서 강조가 부족한 문제들이 있지만, 이를 스스로 인식하기는 쉽지 않습니다.`;
+중요한 부분에서 강조가 부족한 문제들이 있지만, 이를 스스로 인식하기는 쉽지 않습니다.
+
+알
+알
+알알
+알알알
+알알
+`;
 
 export default function PracticePage() {
   const [stage, setStage] = useState<PracticeStage>("ready");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isReadingMarksEnabled, setIsReadingMarksEnabled] = useState(true);
   const [timeExceededType, setTimeExceededType] = useState<
     "initial" | "periodic" | "max" | null
   >(null);
@@ -196,6 +204,8 @@ export default function PracticePage() {
             time={formattedTime}
             isRecording={isRecording}
             statusText={recordingStatusText}
+            isReadingMarksEnabled={isReadingMarksEnabled}
+            onToggleReadingMarks={setIsReadingMarksEnabled}
           />
 
           <div className="practice-page__right-column">
