@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import "./styles/script.css";
+import { useNavigate } from "react-router-dom";
+
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
@@ -43,6 +45,7 @@ const createEmptyScript = (): ScriptItem => ({
 });
 
 const ScriptPage = () => {
+    const navigate = useNavigate();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
@@ -125,7 +128,7 @@ const ScriptPage = () => {
   const handleStartPractice = () => {
     if (!selectedScript) return;
 
-    console.log("start practice", selectedScript); // 발표 연습 시작 로직 연결 예정
+        navigate("/practice");
   };
 
   return (
