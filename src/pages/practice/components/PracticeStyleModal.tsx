@@ -45,6 +45,9 @@ export default function PracticeStyleModal({
 }: PracticeStyleModalProps) {
   const [selectedStyle, setSelectedStyle] =
     useState<SpeechStyleId>(recommendedStyle);
+  const recommendedOption =
+    speechStyleOptions.find((option) => option.id === recommendedStyle) ??
+    speechStyleOptions[0];
 
   const handlePreviewTts = (styleId: SpeechStyleId) => {
     // TODO: 백엔드 TTS 연동 시 styleId를 기준으로 가이드 음성을 재생
@@ -61,7 +64,7 @@ export default function PracticeStyleModal({
       >
         <div className="practice-modal__header practice-modal__header--style">
           <p>입력하신 스피치 데이터를 바탕으로 추천하는 스타일이에요.</p>
-          <h2 id="practice-style-title">열정적인 스타일</h2>
+          <h2 id="practice-style-title">{recommendedOption.title}</h2>
         </div>
 
         <div className="practice-style-modal__body">
