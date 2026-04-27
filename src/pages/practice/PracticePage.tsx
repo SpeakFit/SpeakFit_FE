@@ -5,8 +5,9 @@ import ScriptPanel from "./components/ScriptPanel";
 import MetricCard from "../../components/common/MetricCard/MetricCard";
 import RecordButton from "./components/RecordButton";
 import PracticeIntroModal from "./components/PracticeIntroModal";
+import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
-import type { IntroFormState, PracticeStage } from "./types";
+import type { IntroFormState, PracticeStage, SpeechStyleId } from "./types";
 
 const initialForm: IntroFormState = {
   audienceAge: "",
@@ -34,7 +35,7 @@ const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서�
 `;
 
 export default function PracticePage() {
-  const [stage, setStage] = useState<PracticeStage>("ready");
+  const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -122,7 +123,8 @@ export default function PracticePage() {
   }, [elapsedSeconds]);
 
   const recordingStatusText = useMemo(() => {
-    if (stage === "intro-modal" || stage === "ready") return "녹음 전";
+    if (stage === "intro-modal" || stage === "style-modal" || stage === "ready")
+      return "녹음 전";
     if (stage === "recording") return "녹음 중";
     if (stage === "paused") return "일시정지";
     if (stage === "record-finished") return "녹음 완료";
@@ -142,6 +144,17 @@ export default function PracticePage() {
 
   const handleConfirmIntro = () => {
     if (!isIntroComplete) return;
+    setStage("style-modal");
+  };
+
+  const handlePreviewStyleTts = (styleId: SpeechStyleId) => {
+    // TODO: 백엔드 TTS 연동 시 선택한 styleId에 맞는 가이드 음성을 재생
+    console.log("TTS preview style", styleId);
+  };
+
+  const handleConfirmStyle = (styleId: SpeechStyleId) => {
+    // TODO: 백엔드 연동 시 선택한 styleId를 연습 세션 생성 요청에 포함
+    console.log("Selected speech style", styleId);
     setStage("ready");
   };
 
@@ -279,6 +292,14 @@ export default function PracticePage() {
             onChange={setIntroForm}
             onConfirm={handleConfirmIntro}
             isConfirmEnabled={isIntroComplete}
+          />
+        )}
+
+        {stage === "style-modal" && (
+          <PracticeStyleModal
+            recommendedStyle="passionate"
+            onPreviewTts={handlePreviewStyleTts}
+            onConfirm={handleConfirmStyle}
           />
         )}
 

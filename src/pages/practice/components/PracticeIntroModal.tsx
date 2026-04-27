@@ -152,7 +152,7 @@ export default function PracticeIntroModal({
             onClick={onConfirm}
             disabled={!isConfirmEnabled}
           >
-            확인
+            다음
           </button>
         </div>
       </div>

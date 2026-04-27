@@ -1,5 +1,6 @@
 export type PracticeStage =
   | "intro-modal"
+  | "style-modal"
   | "ready"
   | "recording"
   | "paused"
@@ -15,3 +16,5 @@ export type IntroFormState = {
   speechType: SpeechType | "";
   duration: string;
 };
+
+export type SpeechStyleId = "passionate" | "intellectual" | "calm" | "dynamic";
