@@ -1,15 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
-import { ROUTES } from "./routes.const";
-
-import FooterLayout from "../components/FooterLayout"
+import FooterLayout from "../components/FooterLayout";
 import Layout from "../components/DefaultLayout";
 import PracticeLayout from "../components/PracticeLayout";
-
 import LandingPage from "../pages/landing/LandingPage";
 import SignupPage from "../pages/signup/SignupPage";
-import LoginPage from "../pages/login/LoginPage";
+import ScriptPage from "../pages/script/ScriptPage";
 import PracticePage from "../pages/practice/PracticePage";
-
+import { ROUTES } from "./routes.const";
 
 export const router = createBrowserRouter([
   {
@@ -18,14 +15,13 @@ export const router = createBrowserRouter([
   },
   {
     element: <Layout />,
-    children: [{ path: ROUTES.SIGNUP, element: <SignupPage /> }],
-  },
-  {
-    element: <Layout />,
-    children: [{path:ROUTES.LOGIN, element: <LoginPage />}],
+    children: [
+      { path: ROUTES.SIGNUP, element: <SignupPage /> },
+      { path: ROUTES.SCRIPT, element: <ScriptPage /> },
+    ],
   },
   {
     element: <PracticeLayout />,
-    children: [{ path: "/practice", element: <PracticePage />}],
+    children: [{ path: "/practice", element: <PracticePage /> }],
   },
 ]);
