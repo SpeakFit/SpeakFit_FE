@@ -210,6 +210,11 @@
   margin-top: 24px;
 }
 
+.sf-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .sf-login-link {
   margin-top: 14px;
   font-size: 13px;

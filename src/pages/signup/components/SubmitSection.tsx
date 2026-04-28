@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
 
-export default function SubmitSection() {
+type SubmitSectionProps = {
+  disabled?: boolean;
+};
+
+export default function SubmitSection({ disabled = false }: SubmitSectionProps) {
   return (
     <div>
-      <button className="sf-submit" type="submit">
-        회원 가입
+      <button className="sf-submit" type="submit" disabled={disabled}>
+        {disabled ? "가입 중..." : "회원 가입"}
       </button>
 
       <div className="sf-login-link">
