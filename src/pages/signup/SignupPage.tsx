@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./styles/signup.css";
+import { signUp, type SignUpRequest } from "../../api/auth";
+import { ROUTES } from "../../app/routes.const";
 import SignupCard from "./components/SignupCard";
 import SignupTitle from "./components/SignupTitle";
 import BirthDateField from "./components/BirthDateField";
@@ -18,7 +21,21 @@ import {
   validateBirthDate,
 } from "./utils/validateSignup";
 
+const genderMap: Record<string, SignUpRequest["gender"]> = {
+  male: "MALE",
+  female: "FEMALE",
+};
+
+const dialectMap: Record<string, SignUpRequest["dialect"]> = {
+  seoul: "STANDARD",
+  gyeongsang: "GYEONGSANG",
+  chungcheong: "CHUNGCHEONG",
+  jeolla: "JEOLLA",
+  gangwon: "GANGWON",
+};
+
 export default function SignupPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -40,8 +57,9 @@ export default function SignupPage() {
     gender: "",
     accent: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const newErrors = {
@@ -53,7 +71,7 @@ export default function SignupPage() {
       ),
       nickname: validateNickname(form.nickname),
       birthDate: validateBirthDate(form.birthDate),
-      gender: form.gender ? "" : "성별을 선택해주세요.",
+      gender: genderMap[form.gender] ? "" : "성별을 선택해주세요.",
       accent: form.accent ? "" : "사투리를 선택해주세요.",
     };
 
@@ -67,8 +85,36 @@ export default function SignupPage() {
       return;
     }
 
-    console.log("회원가입 요청 데이터:", form);
-    // 회원가입 API 호출
+    const gender = genderMap[form.gender];
+    const dialect = dialectMap[form.accent];
+
+    if (!gender || !dialect) return;
+
+    const payload: SignUpRequest = {
+      email: form.email,
+      birthday: form.birthDate,
+      password: form.password,
+      nickname: form.nickname,
+      gender,
+      dialect,
+      terms: [
+        { termId: 1, agreed: form.serviceAgreed },
+        { termId: 2, agreed: form.privacyAgreed },
+      ],
+    };
+
+    try {
+      setIsSubmitting(true);
+      await signUp(payload);
+      alert("회원가입이 완료되었습니다. 로그인해주세요.");
+      navigate(ROUTES.LOGIN, { replace: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "회원가입에 실패했습니다.";
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -142,7 +188,7 @@ export default function SignupPage() {
               }
             />
 
-            <SubmitSection />
+            <SubmitSection disabled={isSubmitting} />
           </form>
         </SignupCard>
       </div>
