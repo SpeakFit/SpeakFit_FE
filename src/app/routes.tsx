@@ -3,6 +3,7 @@ import FooterLayout from "../components/FooterLayout";
 import Layout from "../components/DefaultLayout";
 import PracticeLayout from "../components/PracticeLayout";
 import LandingPage from "../pages/landing/LandingPage";
+import LoginPage from "../pages/login/LoginPage";
 import SignupPage from "../pages/signup/SignupPage";
 import ScriptPage from "../pages/script/ScriptPage";
 import PracticePage from "../pages/practice/PracticePage";
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
+      { path: ROUTES.LOGIN, element: <LoginPage /> },
       { path: ROUTES.SIGNUP, element: <SignupPage /> },
       { path: ROUTES.SCRIPT, element: <ScriptPage /> },
     ],
