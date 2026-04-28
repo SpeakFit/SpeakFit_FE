@@ -1,0 +1,18 @@
+:root {
+  --max-width: 1440px;
+
+  --color-text: #111111;
+  --color-bg: #ffffff;
+  --color-border: #eaeaea;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 80px;
+}

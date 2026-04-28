@@ -1,0 +1,42 @@
+name: Discord Notify
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    types: [opened, reopened, closed]
+  issues:
+    types: [opened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          EVENT="${{ github.event_name }}"
+          REPO="${{ github.repository }}"
+          ACTOR="${{ github.actor }}"
+          URL="${{ github.server_url }}/${{ github.repository }}"
+          
+          if [ "$EVENT" = "push" ]; then
+            MSG="✅ **Push** to \`${{ github.ref_name }}\`\nRepo: **$REPO**\nBy: **$ACTOR**\nCommit: \`${{ github.sha }}\`\n$URL"
+          elif [ "$EVENT" = "pull_request" ]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_URL="${{ github.event.pull_request.html_url }}"
+            ACTION="${{ github.event.action }}"
+            MSG="🔀 **PR $ACTION**\nRepo: **$REPO**\n**$PR_TITLE**\nBy: **$ACTOR**\n$PR_URL"
+          elif [ "$EVENT" = "issues" ]; then
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            ACTION="${{ github.event.action }}"
+            MSG="📝 **Issue $ACTION**\nRepo: **$REPO**\n**$ISSUE_TITLE**\nBy: **$ACTOR**\n$ISSUE_URL"
+          else
+            MSG="📌 Event: **$EVENT**\nRepo: **$REPO**\nBy: **$ACTOR**\n$URL"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\": \"$MSG\"}" \
+            "$DISCORD_WEBHOOK_URL"
