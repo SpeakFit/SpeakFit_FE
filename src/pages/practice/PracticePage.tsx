@@ -4,10 +4,18 @@ import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
 import MetricCard from "../../components/common/MetricCard/MetricCard";
 import RecordButton from "./components/RecordButton";
+import FeedbackMetricsPanel from "./components/FeedbackMetricsPanel";
+import FeedbackScriptPanel from "./components/FeedbackScriptPanel";
 import PracticeIntroModal from "./components/PracticeIntroModal";
 import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
-import type { IntroFormState, PracticeStage, SpeechStyleId } from "./types";
+import type {
+  FeedbackIssue,
+  FeedbackMetricId,
+  IntroFormState,
+  PracticeStage,
+  SpeechStyleId,
+} from "./types";
 
 const initialForm: IntroFormState = {
   audienceAge: "",
@@ -34,12 +42,52 @@ const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서�
 알알
 `;
 
+const feedbackIssues: FeedbackIssue[] = [
+  {
+    metricId: "speech-rate",
+    excerpt: "발표를 준비할 때 대부분의 사람들은 내용 위주로만 연습하고,",
+    title: "발화 속도가 목표보다 조금 느렸습니다.",
+    description:
+      "핵심 문장 앞에서는 속도를 유지하고, 문장 끝에서만 짧게 쉬면 흐름이 더 자연스러워집니다.",
+  },
+  {
+    metricId: "voice-energy",
+    excerpt: "오늘은 저희 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.",
+    title: "문장 끝 에너지가 낮게 측정되었습니다.",
+    description:
+      "도입부의 주요 안내 문장은 끝까지 힘을 유지하면 청중이 발표 흐름을 더 쉽게 따라올 수 있습니다.",
+  },
+  {
+    metricId: "pause",
+    excerpt: "자신의 말하기 습관이나 전달력은 객관적으로 확인하기 어렵습니다.",
+    title: "문장 중간에서 2초 이상의 멈춤이 발생했습니다.",
+    description:
+      "문장 중간에 흐름이 끊겼습니다. 이어서 말하고 문장 끝에서 0.5~0.5초 정도 자연스럽게 쉬어보세요.",
+  },
+  {
+    metricId: "emphasis",
+    excerpt: "중요한 부분에서 강조가 부족한 문제들이 있지만,",
+    title: "핵심 문장의 강조가 부족했습니다.",
+    description:
+      "중요한 단어는 음량이나 억양을 살짝 올려 말하면 메시지가 더 분명하게 전달됩니다.",
+  },
+  {
+    metricId: "clarity",
+    excerpt: "발표를 녹음하면 말하기 속도,침묵 구간, 반복 단어, 전체 발표 흐름을 분석",
+    title: "일부 구간의 발음 명료도가 낮았습니다.",
+    description:
+      "긴 나열 문장은 단어 사이를 조금 더 또렷하게 끊어 말하면 인식률과 전달력이 함께 좋아집니다.",
+  },
+];
+
 export default function PracticePage() {
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isReadingMarksEnabled, setIsReadingMarksEnabled] = useState(true);
+  const [activeFeedbackMetric, setActiveFeedbackMetric] =
+    useState<FeedbackMetricId | null>(null);
   const [timeExceededType, setTimeExceededType] = useState<
     "initial" | "periodic" | "max" | null
   >(null);
@@ -186,6 +234,7 @@ export default function PracticePage() {
   const handleFinishRecord = async () => {
     try {
       const finalBlob = await stopRecording();
+      setActiveFeedbackMetric(null);
       setStage("record-finished");
 
       // TODO: 백엔드 연동 후 finalBlob을 FormData로 업로드
@@ -210,36 +259,58 @@ export default function PracticePage() {
           onChange={setActiveTab}
         />
 
-        <section className="practice-page__main-grid">
-          <ScriptPanel
-            title="Title"
-            script={SCRIPT_TEXT}
-            time={formattedTime}
-            isRecording={isRecording}
-            statusText={recordingStatusText}
-            isReadingMarksEnabled={isReadingMarksEnabled}
-            onToggleReadingMarks={setIsReadingMarksEnabled}
-          />
+        <section
+          className={`practice-page__main-grid ${
+            stage === "record-finished" ? "practice-page__main-grid--feedback" : ""
+          }`}
+        >
+          {stage === "record-finished" ? (
+            <>
+              <FeedbackScriptPanel
+                title="캡스톤 1차 발표"
+                script={SCRIPT_TEXT}
+                activeMetricId={activeFeedbackMetric}
+                issues={feedbackIssues}
+              />
 
-          <div className="practice-page__right-column">
-            <MetricCard
-              title="발화 속도"
-              value={speechRateDisplay}
-              unit={speechRateDisplay === "--" ? "" : ""}
-              description="녹음 후 백엔드 분석 결과가 표시됩니다."
-              tone="mint"
-              level={0}
-            />
+              <FeedbackMetricsPanel
+                activeMetricId={activeFeedbackMetric}
+                onSelectMetric={setActiveFeedbackMetric}
+              />
+            </>
+          ) : (
+            <>
+              <ScriptPanel
+                title="Title"
+                script={SCRIPT_TEXT}
+                time={formattedTime}
+                isRecording={isRecording}
+                statusText={recordingStatusText}
+                isReadingMarksEnabled={isReadingMarksEnabled}
+                onToggleReadingMarks={setIsReadingMarksEnabled}
+              />
 
-            <MetricCard
-              title="목소리 크기"
-              value={String(volumeLevel)}
-              unit="dB"
-              description="녹음 중 실시간으로 표시됩니다."
-              tone="red"
-              level={volumeLevel}
-            />
-          </div>
+              <div className="practice-page__right-column">
+                <MetricCard
+                  title="발화 속도"
+                  value={speechRateDisplay}
+                  unit={speechRateDisplay === "--" ? "" : ""}
+                  description="녹음 후 백엔드 분석 결과가 표시됩니다."
+                  tone="mint"
+                  level={0}
+                />
+
+                <MetricCard
+                  title="목소리 크기"
+                  value={String(volumeLevel)}
+                  unit="dB"
+                  description="녹음 중 실시간으로 표시됩니다."
+                  tone="red"
+                  level={volumeLevel}
+                />
+              </div>
+            </>
+          )}
         </section>
 
         <div className="practice-page__record-controls">

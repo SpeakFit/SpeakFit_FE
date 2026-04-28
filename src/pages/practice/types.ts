@@ -18,3 +18,17 @@ export type IntroFormState = {
 };
 
 export type SpeechStyleId = "passionate" | "intellectual" | "calm" | "dynamic";
+
+export type FeedbackMetricId =
+  | "speech-rate"
+  | "voice-energy"
+  | "pause"
+  | "emphasis"
+  | "clarity";
+
+export type FeedbackIssue = {
+  metricId: FeedbackMetricId;
+  excerpt: string;
+  title: string;
+  description: string;
+};
