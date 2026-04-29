@@ -15,7 +15,6 @@
   box-sizing: border-box;
 }
 
-/* LEFT */
 .practice-header__left {
   display: flex;
   align-items: center;

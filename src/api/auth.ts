@@ -84,3 +84,50 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
   storage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
   storage.setItem(USER_KEY, JSON.stringify(auth.user));
 }
+
+export function getStoredUser(): UserInfo | null {
+  const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as UserInfo;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAuthSession() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+}
+
+const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
+
+function getVoiceOnboardingSeenKey(userId: number) {
+  return `${VOICE_ONBOARDING_SEEN_KEY_PREFIX}_${userId}`;
+}
+
+export function hasSeenVoiceOnboarding() {
+  const user = getStoredUser();
+
+  if (!user) {
+    return false;
+  }
+
+  return localStorage.getItem(getVoiceOnboardingSeenKey(user.userId)) === "true";
+}
+
+export function markVoiceOnboardingSeen() {
+  const user = getStoredUser();
+
+  if (!user) {
+    return;
+  }
+
+  localStorage.setItem(getVoiceOnboardingSeenKey(user.userId), "true");
+}

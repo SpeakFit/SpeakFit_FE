@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./styles/script.css";
 import { useNavigate } from "react-router-dom";
-
+import { ROUTES } from "../../app/routes.const";
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
@@ -19,9 +19,24 @@ interface ScriptItem {
   keywords: string;
 }
 
-const AGE_OPTIONS: Exclude<AudienceAge, "">[] = ["어린이", "청소년", "노년", "성인"];
-const LEVEL_OPTIONS: Exclude<AudienceLevel, "">[] = ["잘 모름", "보통", "잘 앎"];
-const PURPOSE_OPTIONS: Exclude<Purpose, "">[] = ["발표", "면접", "강의", "토론", "피드백 연습"];
+const AGE_OPTIONS: Exclude<AudienceAge, "">[] = [
+  "어린이",
+  "청소년",
+  "노년",
+  "성인",
+];
+const LEVEL_OPTIONS: Exclude<AudienceLevel, "">[] = [
+  "잘 모름",
+  "보통",
+  "잘 앎",
+];
+const PURPOSE_OPTIONS: Exclude<Purpose, "">[] = [
+  "발표",
+  "면접",
+  "강의",
+  "토론",
+  "피드백 연습",
+];
 
 const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 
@@ -45,7 +60,7 @@ const createEmptyScript = (): ScriptItem => ({
 });
 
 const ScriptPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
@@ -104,7 +119,10 @@ const ScriptPage = () => {
     }
   };
 
-  const updateSelectedScript = <K extends keyof ScriptItem>(key: K, value: ScriptItem[K]) => {
+  const updateSelectedScript = <K extends keyof ScriptItem>(
+    key: K,
+    value: ScriptItem[K]
+  ) => {
     if (!selectedScript) return;
 
     setScripts((prev) =>
@@ -122,13 +140,13 @@ const ScriptPage = () => {
   const handleGenerateOrOptimize = () => {
     if (!selectedScript || !isActionEnabled) return;
 
-    console.log("generate/optimize request", selectedScript); // 백엔드 연결 후 api 호출
+    console.log("generate/optimize request", selectedScript);
   };
 
   const handleStartPractice = () => {
     if (!selectedScript) return;
 
-        navigate("/practice");
+    navigate(ROUTES.PRACTICE);
   };
 
   return (
@@ -138,7 +156,10 @@ const ScriptPage = () => {
           <h1 className="script-page__title">발표 대본 리스트</h1>
 
           <div className="script-page__tab-wrap">
-            <button type="button" className="script-page__tab script-page__tab--active">
+            <button
+              type="button"
+              className="script-page__tab script-page__tab--active"
+            >
               스피치 모드
             </button>
 
@@ -215,10 +236,16 @@ const ScriptPage = () => {
                           </label>
 
                           <div className="script-list-item__actions">
-                            <button type="button" className="script-list-item__action-btn">
+                            <button
+                              type="button"
+                              className="script-list-item__action-btn"
+                            >
                               ↕
                             </button>
-                            <button type="button" className="script-list-item__action-btn">
+                            <button
+                              type="button"
+                              className="script-list-item__action-btn"
+                            >
                               »
                             </button>
                           </div>
@@ -310,7 +337,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.audienceAge === item ? "script-chip--active" : ""
+                          selectedScript.audienceAge === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("audienceAge", item)}
                       >
@@ -326,7 +355,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.audienceLevel === item ? "script-chip--active" : ""
+                          selectedScript.audienceLevel === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("audienceLevel", item)}
                       >
@@ -344,7 +375,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.purpose === item ? "script-chip--active" : ""
+                          selectedScript.purpose === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("purpose", item)}
                       >
@@ -380,7 +413,9 @@ const ScriptPage = () => {
 
         <div
           className={`script-page__actions ${
-            hasSelectedScript ? "script-page__actions--three-columns" : "script-page__actions--two-columns"
+            hasSelectedScript
+              ? "script-page__actions--three-columns"
+              : "script-page__actions--two-columns"
           }`}
         >
           <div className="script-page__actions-cell script-page__actions-cell--left">
