@@ -6,7 +6,6 @@ import {
   deleteScript,
   generateScript,
   getScripts,
-  inputPracticeInfo,
   updateScript,
   type AudienceAgeCode,
   type AudienceLevelCode,
@@ -14,6 +13,7 @@ import {
   type ScriptResponse,
   type SpeechTypeCode,
 } from "../../api/scripts";
+import type { PracticeRouteState } from "../practice/types";
 
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
@@ -57,6 +57,8 @@ const PURPOSE_CODE_MAP: Record<Exclude<Purpose, "">, SpeechTypeCode> = {
   토론: "DISCUSSION",
   "피드백 연습": "FEEDBACKPRACTICE",
 };
+
+const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
 
 const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 
@@ -337,16 +339,25 @@ const ScriptPage = () => {
 
     try {
       const payload = buildAiPayload(selectedScript);
-      const scriptId = await saveSelectedScript(selectedScript);
+      await saveSelectedScript(selectedScript);
 
-      await inputPracticeInfo(scriptId, {
-        audienceType: payload.audienceAge,
-        audienceUnderstanding: payload.audienceLevel,
-        speechInformation: payload.speechType,
-        targetTime: payload.time,
-      });
+      const practiceState: PracticeRouteState = {
+        scriptTitle: selectedScript.title.trim(),
+        scriptContent: selectedContent.trim(),
+        introForm: {
+          audienceAge: selectedScript.audienceAge,
+          audienceKnowledge: selectedScript.audienceLevel,
+          speechType: selectedScript.purpose,
+          duration: String(payload.time),
+        },
+      };
 
-      navigate("/practice");
+      sessionStorage.setItem(
+        PRACTICE_ROUTE_STATE_KEY,
+        JSON.stringify(practiceState)
+      );
+
+      navigate("/practice", { state: practiceState });
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "발표 연습을 시작하지 못했습니다."));
     } finally {
