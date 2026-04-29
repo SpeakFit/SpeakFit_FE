@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const ACCESS_TOKEN_KEY = "speakfit_access_token";
+import { getStoredAccessToken } from "./authStorage";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -8,9 +7,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const accessToken =
-    localStorage.getItem(ACCESS_TOKEN_KEY) ??
-    sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  const accessToken = getStoredAccessToken();
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
