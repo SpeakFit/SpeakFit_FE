@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
@@ -13,6 +14,7 @@ import type {
   FeedbackIssue,
   FeedbackMetricId,
   IntroFormState,
+  PracticeRouteState,
   PracticeStage,
   SpeechStyleId,
 } from "./types";
@@ -25,6 +27,7 @@ const initialForm: IntroFormState = {
 };
 
 const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
+const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
 
 const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서비스 SpeakFit을 개발하고 있는 팀입니다.
 오늘은 저희 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.
@@ -41,6 +44,19 @@ const SCRIPT_TEXT = `안녕하세요. 저희는 발표 연습을 돕는 웹 서�
 알알알
 알알
 `;
+
+const getStoredPracticeRouteState = () => {
+  const stateJson = sessionStorage.getItem(PRACTICE_ROUTE_STATE_KEY);
+
+  if (!stateJson) return null;
+
+  try {
+    return JSON.parse(stateJson) as PracticeRouteState;
+  } catch {
+    sessionStorage.removeItem(PRACTICE_ROUTE_STATE_KEY);
+    return null;
+  }
+};
 
 const feedbackIssues: FeedbackIssue[] = [
   {
@@ -81,9 +97,16 @@ const feedbackIssues: FeedbackIssue[] = [
 ];
 
 export default function PracticePage() {
+  const location = useLocation();
+  const routeState =
+    (location.state as PracticeRouteState | null) ?? getStoredPracticeRouteState();
+  const practiceTitle = routeState?.scriptTitle || "Title";
+  const practiceScript = routeState?.scriptContent || SCRIPT_TEXT;
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
-  const [introForm, setIntroForm] = useState<IntroFormState>(initialForm);
+  const [introForm, setIntroForm] = useState<IntroFormState>(
+    routeState?.introForm ?? initialForm
+  );
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isReadingMarksEnabled, setIsReadingMarksEnabled] = useState(true);
   const [activeFeedbackMetric, setActiveFeedbackMetric] =
@@ -267,8 +290,8 @@ export default function PracticePage() {
           {stage === "record-finished" ? (
             <>
               <FeedbackScriptPanel
-                title="캡스톤 1차 발표"
-                script={SCRIPT_TEXT}
+                title={practiceTitle}
+                script={practiceScript}
                 activeMetricId={activeFeedbackMetric}
                 issues={feedbackIssues}
               />
@@ -281,8 +304,8 @@ export default function PracticePage() {
           ) : (
             <>
               <ScriptPanel
-                title="Title"
-                script={SCRIPT_TEXT}
+                title={practiceTitle}
+                script={practiceScript}
                 time={formattedTime}
                 isRecording={isRecording}
                 statusText={recordingStatusText}
