@@ -95,6 +95,10 @@ const mapScriptResponse = (script: ScriptResponse): ScriptItem => ({
 
 const getErrorMessage = (error: unknown, fallbackMessage: string) => {
   if (error instanceof Error) {
+    if (error.message === "Network Error") {
+      return "서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요.";
+    }
+
     return error.message || fallbackMessage;
   }
 
@@ -325,7 +329,14 @@ const ScriptPage = () => {
 
       applyGeneratedScript(getGeneratedContent(updatedScript));
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          hasContent
+            ? "스크립트 최적화에 실패했습니다. 생성된 대본으로 발표 연습을 시작할 수 있어요."
+            : "스크립트 생성에 실패했습니다."
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -339,8 +350,6 @@ const ScriptPage = () => {
 
     try {
       const payload = buildAiPayload(selectedScript);
-      await saveSelectedScript(selectedScript);
-
       const practiceState: PracticeRouteState = {
         scriptTitle: selectedScript.title.trim(),
         scriptContent: selectedContent.trim(),
@@ -356,6 +365,12 @@ const ScriptPage = () => {
         PRACTICE_ROUTE_STATE_KEY,
         JSON.stringify(practiceState)
       );
+
+      try {
+        await saveSelectedScript(selectedScript);
+      } catch (saveError) {
+        console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.", saveError);
+      }
 
       navigate("/practice", { state: practiceState });
     } catch (error) {
