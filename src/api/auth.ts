@@ -4,6 +4,10 @@ import {
   type StoredUserInfo,
 } from "./authStorage";
 
+const ACCESS_TOKEN_KEY = "speakfit_access_token";
+const USER_KEY = "speakfit_user";
+const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
+
 type ApiResponse<T> = {
   code?: string;
   message?: string;
@@ -35,7 +39,7 @@ export type LoginRequest = {
   password: string;
 };
 
-type LoginResponse = {
+export type LoginResponse = {
   accessToken: string;
   user: StoredUserInfo;
 };
@@ -70,7 +74,7 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
   persistAuthSession(auth.accessToken, auth.user, keepLogin);
 }
 
-export function getStoredUser(): UserInfo | null {
+export function getStoredUser(): StoredUserInfo | null {
   const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
 
   if (!raw) {
@@ -78,7 +82,7 @@ export function getStoredUser(): UserInfo | null {
   }
 
   try {
-    return JSON.parse(raw) as UserInfo;
+    return JSON.parse(raw) as StoredUserInfo;
   } catch {
     return null;
   }
@@ -90,8 +94,6 @@ export function clearAuthSession() {
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
 }
-
-const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
 
 function getVoiceOnboardingSeenKey(userId: number) {
   return `${VOICE_ONBOARDING_SEEN_KEY_PREFIX}_${userId}`;

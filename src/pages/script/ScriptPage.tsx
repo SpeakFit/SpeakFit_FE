@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./styles/script.css";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../../app/routes.const";
 import {
   addScript,
   deleteScript,
