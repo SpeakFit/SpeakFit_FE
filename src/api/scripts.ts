@@ -24,7 +24,10 @@ export type ScriptResponse = {
 };
 
 export type GeneratedScriptResponse = {
-  generatedScript: string;
+  generatedScript?: string;
+  content?: string;
+  updatedScript?: string;
+  optimizedScript?: string;
 };
 
 export type AddScriptRequest = {

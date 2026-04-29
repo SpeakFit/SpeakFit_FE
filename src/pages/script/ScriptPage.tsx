@@ -10,6 +10,7 @@ import {
   updateScript,
   type AudienceAgeCode,
   type AudienceLevelCode,
+  type GeneratedScriptResponse,
   type ScriptResponse,
   type SpeechTypeCode,
 } from "../../api/scripts";
@@ -98,6 +99,22 @@ const getErrorMessage = (error: unknown, fallbackMessage: string) => {
   return fallbackMessage;
 };
 
+const getScriptContent = (script: ScriptItem | null) => script?.content ?? "";
+
+const getGeneratedContent = (response: GeneratedScriptResponse) => {
+  const content =
+    response.generatedScript ??
+    response.optimizedScript ??
+    response.updatedScript ??
+    response.content;
+
+  if (!content?.trim()) {
+    throw new Error("생성된 스크립트 내용이 응답에 없습니다.");
+  }
+
+  return content;
+};
+
 const ScriptPage = () => {
   const navigate = useNavigate();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
@@ -114,7 +131,8 @@ const ScriptPage = () => {
 
   const hasScripts = scripts.length > 0;
   const hasSelectedScript = !!selectedScript;
-  const hasContent = !!selectedScript?.content.trim();
+  const selectedContent = getScriptContent(selectedScript);
+  const hasContent = !!selectedContent.trim();
 
   const isActionEnabled = !!(
     selectedScript &&
@@ -266,7 +284,7 @@ const ScriptPage = () => {
         item.id === selectedScript.id
           ? {
               ...item,
-              content,
+              content: content ?? "",
             }
           : item
       )
@@ -299,11 +317,11 @@ const ScriptPage = () => {
       const updatedScript = hasContent
         ? await updateScript({
             ...payload,
-            content: selectedScript.content.trim(),
+            content: selectedContent.trim(),
           })
         : await generateScript(payload);
 
-      applyGeneratedScript(updatedScript.generatedScript);
+      applyGeneratedScript(getGeneratedContent(updatedScript));
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
     } finally {
@@ -456,7 +474,7 @@ const ScriptPage = () => {
 
                 <textarea
                   className="script-editor-panel__textarea"
-                  value={selectedScript.content}
+                  value={selectedContent}
                   onChange={(e) => updateSelectedScript("content", e.target.value)}
                   placeholder={GUIDE_PLACEHOLDER}
                 />
