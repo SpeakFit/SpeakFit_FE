@@ -536,6 +536,20 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
+.script-page__start-btn:disabled {
+  background: #c9c9c9;
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.script-page__message {
+  margin: 0;
+  color: #d94f4f;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 140%;
+  text-align: center;
+}
 
 @media (max-width: 1280px) {
 .script-page__actions--three-columns,
