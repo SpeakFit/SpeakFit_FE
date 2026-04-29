@@ -1,7 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./styles/script.css";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../app/routes.const";
+import {
+  addScript,
+  deleteScript,
+  generateScript,
+  getScripts,
+  inputPracticeInfo,
+  updateScript,
+  type AudienceAgeCode,
+  type AudienceLevelCode,
+  type ScriptResponse,
+  type SpeechTypeCode,
+} from "../../api/scripts";
+
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
@@ -19,24 +32,31 @@ interface ScriptItem {
   keywords: string;
 }
 
-const AGE_OPTIONS: Exclude<AudienceAge, "">[] = [
-  "어린이",
-  "청소년",
-  "노년",
-  "성인",
-];
-const LEVEL_OPTIONS: Exclude<AudienceLevel, "">[] = [
-  "잘 모름",
-  "보통",
-  "잘 앎",
-];
-const PURPOSE_OPTIONS: Exclude<Purpose, "">[] = [
-  "발표",
-  "면접",
-  "강의",
-  "토론",
-  "피드백 연습",
-];
+const DRAFT_ID_BASE = -Date.now();
+const AGE_OPTIONS: Exclude<AudienceAge, "">[] = ["어린이", "청소년", "노년", "성인"];
+const LEVEL_OPTIONS: Exclude<AudienceLevel, "">[] = ["잘 모름", "보통", "잘 앎"];
+const PURPOSE_OPTIONS: Exclude<Purpose, "">[] = ["발표", "면접", "강의", "토론", "피드백 연습"];
+
+const AGE_CODE_MAP: Record<Exclude<AudienceAge, "">, AudienceAgeCode> = {
+  어린이: "CHILD",
+  청소년: "YOUTH",
+  노년: "SENIOR",
+  성인: "ADULT",
+};
+
+const LEVEL_CODE_MAP: Record<Exclude<AudienceLevel, "">, AudienceLevelCode> = {
+  "잘 모름": "LOW",
+  보통: "MIDDLE",
+  "잘 앎": "HIGH",
+};
+
+const PURPOSE_CODE_MAP: Record<Exclude<Purpose, "">, SpeechTypeCode> = {
+  발표: "PRESENTATION",
+  면접: "INTERVIEW",
+  강의: "LECTURE",
+  토론: "DISCUSSION",
+  "피드백 연습": "FEEDBACKPRACTICE",
+};
 
 const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 
@@ -48,7 +68,7 @@ const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 우측 하단의 발표 연습 시작하기 버튼으로 발표 연습을 시작할 수 있어요 .`;
 
 const createEmptyScript = (): ScriptItem => ({
-  id: Date.now(),
+  id: DRAFT_ID_BASE - Math.floor(Math.random() * 1000000),
   title: "",
   content: "",
   duration: "",
@@ -59,11 +79,34 @@ const createEmptyScript = (): ScriptItem => ({
   keywords: "",
 });
 
+const mapScriptResponse = (script: ScriptResponse): ScriptItem => ({
+  id: script.id,
+  title: script.title ?? "",
+  content: script.content ?? "",
+  duration: "",
+  audienceAge: "",
+  audienceLevel: "",
+  purpose: "",
+  topic: "",
+  keywords: "",
+});
+
+const getErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (error instanceof Error) {
+    return error.message || fallbackMessage;
+  }
+
+  return fallbackMessage;
+};
+
 const ScriptPage = () => {
   const navigate = useNavigate();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const selectedScript = useMemo(
     () => scripts.find((item) => item.id === selectedId) ?? null,
@@ -85,11 +128,41 @@ const ScriptPage = () => {
     selectedScript.keywords.trim()
   );
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadScripts = async () => {
+      try {
+        const scriptList = await getScripts();
+        if (!isMounted) return;
+
+        const nextScripts = scriptList.map(mapScriptResponse);
+        setScripts(nextScripts);
+        setSelectedId(nextScripts[0]?.id ?? null);
+      } catch (error) {
+        if (!isMounted) return;
+
+        setErrorMessage(getErrorMessage(error, "대본 목록을 불러오지 못했습니다."));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadScripts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleAddScript = () => {
     const newItem = createEmptyScript();
     setScripts((prev) => [...prev, newItem]);
     setSelectedId(newItem.id);
     setCheckedIds([]);
+    setErrorMessage("");
   };
 
   const handleSelectScript = (id: number) => {
@@ -102,20 +175,32 @@ const ScriptPage = () => {
     );
   };
 
-  const handleDeleteChecked = () => {
+  const handleDeleteChecked = async () => {
     if (checkedIds.length === 0) return;
 
-    const nextScripts = scripts.filter((item) => !checkedIds.includes(item.id));
-    setScripts(nextScripts);
-    setCheckedIds([]);
+    setIsSubmitting(true);
+    setErrorMessage("");
 
-    if (nextScripts.length === 0) {
-      setSelectedId(null);
-      return;
-    }
+    try {
+      const remoteIds = checkedIds.filter((id) => id > 0);
+      await Promise.all(remoteIds.map((id) => deleteScript(id)));
 
-    if (selectedId && checkedIds.includes(selectedId)) {
-      setSelectedId(nextScripts[0].id);
+      const nextScripts = scripts.filter((item) => !checkedIds.includes(item.id));
+      setScripts(nextScripts);
+      setCheckedIds([]);
+
+      if (nextScripts.length === 0) {
+        setSelectedId(null);
+        return;
+      }
+
+      if (selectedId && checkedIds.includes(selectedId)) {
+        setSelectedId(nextScripts[0].id);
+      }
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "대본 삭제에 실패했습니다."));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -137,16 +222,107 @@ const ScriptPage = () => {
     );
   };
 
-  const handleGenerateOrOptimize = () => {
-    if (!selectedScript || !isActionEnabled) return;
+  const buildAiPayload = (script: ScriptItem) => {
+    const time = Number(script.duration);
 
-    console.log("generate/optimize request", selectedScript);
+    if (!Number.isInteger(time) || time <= 0 || time > 15) {
+      throw new Error("발표 시간은 1분 이상 15분 이하의 숫자로 입력해주세요.");
+    }
+
+    if (!script.audienceAge || !script.audienceLevel || !script.purpose) {
+      throw new Error("대본 작성 가이드 항목을 모두 선택해주세요.");
+    }
+
+    return {
+      topic: script.title.trim(),
+      time,
+      audienceAge: AGE_CODE_MAP[script.audienceAge],
+      audienceLevel: LEVEL_CODE_MAP[script.audienceLevel],
+      speechType: PURPOSE_CODE_MAP[script.purpose],
+      purpose: script.topic.trim(),
+      keywords: script.keywords.trim(),
+    };
   };
 
-  const handleStartPractice = () => {
+  const replaceSelectedScript = (script: ScriptResponse) => {
+    const nextScript = mapScriptResponse(script);
+
+    setScripts((prev) =>
+      prev.map((item) =>
+        item.id === selectedScript?.id
+          ? {
+              ...item,
+              id: nextScript.id,
+              title: nextScript.title,
+              content: nextScript.content,
+            }
+          : item
+      )
+    );
+    setSelectedId(nextScript.id);
+  };
+
+  const saveSelectedScript = async (script: ScriptItem) => {
+    if (script.id > 0) {
+      return script.id;
+    }
+
+    const savedScript = await addScript({
+      title: script.title.trim(),
+      content: script.content.trim(),
+    });
+
+    replaceSelectedScript(savedScript);
+
+    return savedScript.id;
+  };
+
+  const handleGenerateOrOptimize = async () => {
+    if (!selectedScript || !isActionEnabled) return;
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const payload = buildAiPayload(selectedScript);
+      const updatedScript = hasContent
+        ? await updateScript({
+            ...payload,
+            content: selectedScript.content.trim(),
+          })
+        : await generateScript(payload);
+
+      replaceSelectedScript(updatedScript);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStartPractice = async () => {
     if (!selectedScript) return;
 
-    navigate(ROUTES.PRACTICE);
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const payload = buildAiPayload(selectedScript);
+      const scriptId = await saveSelectedScript(selectedScript);
+
+      await inputPracticeInfo(scriptId, {
+        audienceType: payload.audienceAge,
+        audienceUnderstanding: payload.audienceLevel,
+        speechInformation: payload.speechType,
+        targetTime: payload.time,
+      });
+
+      navigate("/practice");
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "발표 연습을 시작하지 못했습니다."));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -202,7 +378,11 @@ const ScriptPage = () => {
               </div>
 
               <div className="script-list-panel__body">
-                {!hasScripts ? (
+                {isLoading ? (
+                  <div className="script-list-panel__empty">
+                    <p>대본 목록을 불러오는 중이에요.</p>
+                  </div>
+                ) : !hasScripts ? (
                   <div className="script-list-panel__empty">
                     <p>
                       상단 우측의 아이콘을 통해
@@ -295,10 +475,10 @@ const ScriptPage = () => {
                 <button
                   type="button"
                   className="script-generator-panel__submit-btn"
-                  disabled={!isActionEnabled}
+                  disabled={!isActionEnabled || isSubmitting}
                   onClick={handleGenerateOrOptimize}
                 >
-                  {hasContent ? "스크립트 최적화" : "스크립트 생성"}
+                  {isSubmitting ? "처리 중" : hasContent ? "스크립트 최적화" : "스크립트 생성"}
                 </button>
               </div>
 
@@ -422,20 +602,23 @@ const ScriptPage = () => {
             <button
               type="button"
               className="script-list-panel__delete-btn"
-              disabled={checkedIds.length === 0}
+              disabled={checkedIds.length === 0 || isSubmitting}
               onClick={handleDeleteChecked}
             >
               삭제하기
             </button>
           </div>
 
-          <div className="script-page__actions-cell script-page__actions-cell--center" />
+          <div className="script-page__actions-cell script-page__actions-cell--center">
+            {errorMessage && <p className="script-page__message">{errorMessage}</p>}
+          </div>
 
           <div className="script-page__actions-cell script-page__actions-cell--right">
             {hasSelectedScript && (
               <button
                 type="button"
                 className="script-page__start-btn"
+                disabled={isSubmitting || !hasContent || !isActionEnabled}
                 onClick={handleStartPractice}
               >
                 발표 연습 시작하기
