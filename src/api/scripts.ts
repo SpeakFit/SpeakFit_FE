@@ -23,6 +23,13 @@ export type ScriptResponse = {
   createdAt?: string;
 };
 
+export type GeneratedScriptResponse = {
+  generatedScript?: string;
+  content?: string;
+  updatedScript?: string;
+  optimizedScript?: string;
+};
+
 export type AddScriptRequest = {
   title: string;
   content: string;
@@ -76,7 +83,7 @@ export async function deleteScript(scriptId: number) {
 }
 
 export async function generateScript(payload: GenerateScriptRequest) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<GeneratedScriptResponse>>(
     "/api/scripts/ai-generate",
     payload
   );
@@ -85,7 +92,7 @@ export async function generateScript(payload: GenerateScriptRequest) {
 }
 
 export async function updateScript(payload: UpdateScriptRequest) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<GeneratedScriptResponse>>(
     "/api/scripts/ai-update",
     payload
   );

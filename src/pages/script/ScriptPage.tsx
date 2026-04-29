@@ -7,13 +7,14 @@ import {
   deleteScript,
   generateScript,
   getScripts,
-  inputPracticeInfo,
   updateScript,
   type AudienceAgeCode,
   type AudienceLevelCode,
+  type GeneratedScriptResponse,
   type ScriptResponse,
   type SpeechTypeCode,
 } from "../../api/scripts";
+import type { PracticeRouteState } from "../practice/types";
 
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
@@ -58,6 +59,8 @@ const PURPOSE_CODE_MAP: Record<Exclude<Purpose, "">, SpeechTypeCode> = {
   "피드백 연습": "FEEDBACKPRACTICE",
 };
 
+const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
+
 const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 
 대본을 못 쓰겠다면 우측의 대본 작성 가이드를 통해 발표 대본을 생성할 수 있어요.
@@ -99,6 +102,22 @@ const getErrorMessage = (error: unknown, fallbackMessage: string) => {
   return fallbackMessage;
 };
 
+const getScriptContent = (script: ScriptItem | null) => script?.content ?? "";
+
+const getGeneratedContent = (response: GeneratedScriptResponse) => {
+  const content =
+    response.generatedScript ??
+    response.optimizedScript ??
+    response.updatedScript ??
+    response.content;
+
+  if (!content?.trim()) {
+    throw new Error("생성된 스크립트 내용이 응답에 없습니다.");
+  }
+
+  return content;
+};
+
 const ScriptPage = () => {
   const navigate = useNavigate();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
@@ -115,7 +134,8 @@ const ScriptPage = () => {
 
   const hasScripts = scripts.length > 0;
   const hasSelectedScript = !!selectedScript;
-  const hasContent = !!selectedScript?.content.trim();
+  const selectedContent = getScriptContent(selectedScript);
+  const hasContent = !!selectedContent.trim();
 
   const isActionEnabled = !!(
     selectedScript &&
@@ -262,6 +282,21 @@ const ScriptPage = () => {
     setSelectedId(nextScript.id);
   };
 
+  const applyGeneratedScript = (content: string) => {
+    if (!selectedScript) return;
+
+    setScripts((prev) =>
+      prev.map((item) =>
+        item.id === selectedScript.id
+          ? {
+              ...item,
+              content: content ?? "",
+            }
+          : item
+      )
+    );
+  };
+
   const saveSelectedScript = async (script: ScriptItem) => {
     if (script.id > 0) {
       return script.id;
@@ -288,11 +323,11 @@ const ScriptPage = () => {
       const updatedScript = hasContent
         ? await updateScript({
             ...payload,
-            content: selectedScript.content.trim(),
+            content: selectedContent.trim(),
           })
         : await generateScript(payload);
 
-      replaceSelectedScript(updatedScript);
+      applyGeneratedScript(getGeneratedContent(updatedScript));
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
     } finally {
@@ -308,16 +343,25 @@ const ScriptPage = () => {
 
     try {
       const payload = buildAiPayload(selectedScript);
-      const scriptId = await saveSelectedScript(selectedScript);
+      await saveSelectedScript(selectedScript);
 
-      await inputPracticeInfo(scriptId, {
-        audienceType: payload.audienceAge,
-        audienceUnderstanding: payload.audienceLevel,
-        speechInformation: payload.speechType,
-        targetTime: payload.time,
-      });
+      const practiceState: PracticeRouteState = {
+        scriptTitle: selectedScript.title.trim(),
+        scriptContent: selectedContent.trim(),
+        introForm: {
+          audienceAge: selectedScript.audienceAge,
+          audienceKnowledge: selectedScript.audienceLevel,
+          speechType: selectedScript.purpose,
+          duration: String(payload.time),
+        },
+      };
 
-      navigate("/practice");
+      sessionStorage.setItem(
+        PRACTICE_ROUTE_STATE_KEY,
+        JSON.stringify(practiceState)
+      );
+
+      navigate("/practice", { state: practiceState });
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "발표 연습을 시작하지 못했습니다."));
     } finally {
@@ -454,7 +498,7 @@ const ScriptPage = () => {
 
                 <textarea
                   className="script-editor-panel__textarea"
-                  value={selectedScript.content}
+                  value={selectedContent}
                   onChange={(e) => updateSelectedScript("content", e.target.value)}
                   placeholder={GUIDE_PLACEHOLDER}
                 />
