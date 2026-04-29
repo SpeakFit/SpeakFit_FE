@@ -1,7 +1,8 @@
 import { api } from "./http";
-
-export const ACCESS_TOKEN_KEY = "speakfit_access_token";
-const USER_KEY = "speakfit_user";
+import {
+  saveAuthSession as persistAuthSession,
+  type StoredUserInfo,
+} from "./authStorage";
 
 type ApiResponse<T> = {
   code?: string;
@@ -34,18 +35,9 @@ export type LoginRequest = {
   password: string;
 };
 
-type UserInfo = {
-  userId: number;
-  email: string;
-  nickname: string;
-  birthday: string;
-  gender: string;
-  dialect: string;
-};
-
 type LoginResponse = {
   accessToken: string;
-  user: UserInfo;
+  user: StoredUserInfo;
 };
 
 function unwrapResponse<T>(response: ApiResponse<T>, fallbackMessage: string) {
@@ -75,12 +67,5 @@ export async function login(payload: LoginRequest) {
 }
 
 export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
-  const storage = keepLogin ? localStorage : sessionStorage;
-  const otherStorage = keepLogin ? sessionStorage : localStorage;
-
-  otherStorage.removeItem(ACCESS_TOKEN_KEY);
-  otherStorage.removeItem(USER_KEY);
-
-  storage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
-  storage.setItem(USER_KEY, JSON.stringify(auth.user));
+  persistAuthSession(auth.accessToken, auth.user, keepLogin);
 }

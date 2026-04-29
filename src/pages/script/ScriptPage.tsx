@@ -258,6 +258,21 @@ const ScriptPage = () => {
     setSelectedId(nextScript.id);
   };
 
+  const applyGeneratedScript = (content: string) => {
+    if (!selectedScript) return;
+
+    setScripts((prev) =>
+      prev.map((item) =>
+        item.id === selectedScript.id
+          ? {
+              ...item,
+              content,
+            }
+          : item
+      )
+    );
+  };
+
   const saveSelectedScript = async (script: ScriptItem) => {
     if (script.id > 0) {
       return script.id;
@@ -288,7 +303,7 @@ const ScriptPage = () => {
           })
         : await generateScript(payload);
 
-      replaceSelectedScript(updatedScript);
+      applyGeneratedScript(updatedScript.generatedScript);
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
     } finally {
