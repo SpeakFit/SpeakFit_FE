@@ -44,6 +44,7 @@ export default function VoiceRecordingPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const progressTimerRef = useRef<number | null>(null);
+  const doneTimeoutRef = useRef<number | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -74,6 +75,13 @@ export default function VoiceRecordingPage() {
     if (progressTimerRef.current) {
       window.clearInterval(progressTimerRef.current);
       progressTimerRef.current = null;
+    }
+  };
+
+  const clearDoneTimeout = () => {
+    if (doneTimeoutRef.current) {
+      window.clearTimeout(doneTimeoutRef.current);
+      doneTimeoutRef.current = null;
     }
   };
 
@@ -114,6 +122,7 @@ export default function VoiceRecordingPage() {
   useEffect(() => {
     return () => {
       clearProgressTimer();
+      clearDoneTimeout();
     };
   }, []);
 
@@ -141,6 +150,8 @@ export default function VoiceRecordingPage() {
   };
 
   const handleResetRecording = () => {
+    clearProgressTimer();
+    clearDoneTimeout();
     setRecordingSeconds(0);
     setProgress(0);
     setErrorMessage(null);
@@ -159,6 +170,9 @@ export default function VoiceRecordingPage() {
     setProgress(0);
     setPageState("processing");
 
+    clearProgressTimer();
+    clearDoneTimeout();
+
     progressTimerRef.current = window.setInterval(() => {
       setProgress((prev) => Math.min(prev + 2, 92));
     }, 80);
@@ -173,11 +187,13 @@ export default function VoiceRecordingPage() {
       clearProgressTimer();
       setProgress(100);
 
-      window.setTimeout(() => {
+      doneTimeoutRef.current = window.setTimeout(() => {
         setPageState("done");
+        doneTimeoutRef.current = null;
       }, 250);
     } catch (error) {
       clearProgressTimer();
+      clearDoneTimeout();
       setProgress(0);
       setPageState("recorded");
       setErrorMessage(
@@ -241,8 +257,8 @@ export default function VoiceRecordingPage() {
             <p className="voice-recording-card__example-label">예시 문장</p>
 
             <div className="voice-recording-card__example-box">
-              {EXAMPLE_SENTENCE.split("\n").map((line) => (
-                <p key={line}>{line}</p>
+              {EXAMPLE_SENTENCE.split("\n").map((line, index) => (
+                <p key={index}>{line}</p>
               ))}
             </div>
 
