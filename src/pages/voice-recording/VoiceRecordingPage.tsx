@@ -18,6 +18,13 @@ type VoicePageState =
 
 const EXAMPLE_SENTENCE = `안녕하세요. 오늘 발표에서는 사용자 경험을 개선하기 위한 핵심 방향을 말씀드리겠습니다.\n중요한 내용은 천천히, 강조할 부분은 또렷하게 전달해보겠습니다.`;
 
+const PROCESSING_MODAL_TITLE_ID = "voice-recording-processing-title";
+const PROCESSING_MODAL_DESC_ID = "voice-recording-processing-desc";
+const DONE_MODAL_TITLE_ID = "voice-recording-done-title";
+const DONE_MODAL_DESC_ID = "voice-recording-done-desc";
+const WARNING_MODAL_TITLE_ID = "voice-recording-warning-title";
+const WARNING_MODAL_DESC_ID = "voice-recording-warning-desc";
+
 const formatTime = (seconds: number) => {
   const h = Math.floor(seconds / 3600)
     .toString()
@@ -35,7 +42,10 @@ export default function VoiceRecordingPage() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const progressTimerRef = useRef<number | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
 
   const {
     status,
@@ -47,6 +57,25 @@ export default function VoiceRecordingPage() {
 
   const currentUser = useMemo(() => getStoredUser(), []);
   const displayName = currentUser?.nickname?.trim() || "사용자";
+
+  const rememberTrigger = (element: HTMLElement | null) => {
+    lastTriggerRef.current = element;
+  };
+
+  const restoreTriggerFocus = () => {
+    if (!lastTriggerRef.current) return;
+
+    window.requestAnimationFrame(() => {
+      lastTriggerRef.current?.focus?.();
+    });
+  };
+
+  const clearProgressTimer = () => {
+    if (progressTimerRef.current) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     markVoiceOnboardingSeen();
@@ -64,15 +93,27 @@ export default function VoiceRecordingPage() {
 
   useEffect(() => {
     if (!recordingError) return;
+
     setErrorMessage(recordingError);
     setPageState("default");
   }, [recordingError]);
 
   useEffect(() => {
+    const isModalState =
+      pageState === "processing" ||
+      pageState === "done" ||
+      pageState === "later-warning";
+
+    if (!isModalState) return;
+
+    window.requestAnimationFrame(() => {
+      modalRef.current?.focus();
+    });
+  }, [pageState]);
+
+  useEffect(() => {
     return () => {
-      if (progressTimerRef.current) {
-        window.clearInterval(progressTimerRef.current);
-      }
+      clearProgressTimer();
     };
   }, []);
 
@@ -104,9 +145,16 @@ export default function VoiceRecordingPage() {
     setProgress(0);
     setErrorMessage(null);
     setPageState("default");
+    restoreTriggerFocus();
   };
 
   const handleAnalyze = async () => {
+    rememberTrigger(
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    );
+
     setErrorMessage(null);
     setProgress(0);
     setPageState("processing");
@@ -122,19 +170,14 @@ export default function VoiceRecordingPage() {
 
       await uploadVoiceProfileRecording(audioBlob);
 
-      if (progressTimerRef.current) {
-        window.clearInterval(progressTimerRef.current);
-      }
-
+      clearProgressTimer();
       setProgress(100);
+
       window.setTimeout(() => {
         setPageState("done");
       }, 250);
     } catch (error) {
-      if (progressTimerRef.current) {
-        window.clearInterval(progressTimerRef.current);
-      }
-
+      clearProgressTimer();
       setProgress(0);
       setPageState("recorded");
       setErrorMessage(
@@ -142,14 +185,31 @@ export default function VoiceRecordingPage() {
           ? error.message
           : "음성 분석 중 문제가 발생했어요. 다시 시도해주세요."
       );
+      restoreTriggerFocus();
     }
   };
 
+  const handleOpenLaterWarning = () => {
+    rememberTrigger(
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    );
+    setPageState("later-warning");
+  };
+
+  const handleCloseLaterWarning = () => {
+    setPageState("default");
+    restoreTriggerFocus();
+  };
+
   const handleGoLanding = () => {
+    restoreTriggerFocus();
     navigate(ROUTES.LANDING, { replace: true });
   };
 
   const handleGoScript = () => {
+    restoreTriggerFocus();
     navigate(ROUTES.SCRIPT, { replace: true });
   };
 
@@ -208,7 +268,7 @@ export default function VoiceRecordingPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPageState("later-warning")}
+                  onClick={handleOpenLaterWarning}
                   className="voice-recording-card__link-btn"
                 >
                   나중에 하기
@@ -235,9 +295,7 @@ export default function VoiceRecordingPage() {
               </>
             )}
 
-            {(pageState === "recorded" ||
-              pageState === "processing" ||
-              pageState === "done") && (
+            {(pageState === "recorded" || pageState === "processing") && (
               <>
                 <button
                   type="button"
@@ -267,12 +325,28 @@ export default function VoiceRecordingPage() {
 
       {pageState === "processing" && (
         <div className="voice-recording-modal-overlay">
-          <div className="voice-recording-modal voice-recording-modal--processing">
+          <div
+            ref={modalRef}
+            className="voice-recording-modal voice-recording-modal--processing"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={PROCESSING_MODAL_TITLE_ID}
+            aria-describedby={PROCESSING_MODAL_DESC_ID}
+            tabIndex={-1}
+          >
             <div className="voice-recording-modal__text-wrap">
-              <p className="voice-recording-modal__title">
+              <p
+                id={PROCESSING_MODAL_TITLE_ID}
+                className="voice-recording-modal__title"
+              >
                 녹음하신 음성을 분석하고 있어요
               </p>
-              <p className="voice-recording-modal__desc">잠시만 기다려주세요.</p>
+              <p
+                id={PROCESSING_MODAL_DESC_ID}
+                className="voice-recording-modal__desc"
+              >
+                잠시만 기다려주세요.
+              </p>
             </div>
 
             <div className="voice-recording-modal__progress-wrap">
@@ -290,12 +364,26 @@ export default function VoiceRecordingPage() {
 
       {pageState === "done" && (
         <div className="voice-recording-modal-overlay">
-          <div className="voice-recording-modal voice-recording-modal--done">
+          <div
+            ref={modalRef}
+            className="voice-recording-modal voice-recording-modal--done"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={DONE_MODAL_TITLE_ID}
+            aria-describedby={DONE_MODAL_DESC_ID}
+            tabIndex={-1}
+          >
             <div className="voice-recording-modal__done-icon">✓</div>
-            <p className="voice-recording-modal__title voice-recording-modal__title--center">
+            <p
+              id={DONE_MODAL_TITLE_ID}
+              className="voice-recording-modal__title voice-recording-modal__title--center"
+            >
               분석이 완료됐어요
             </p>
-            <p className="voice-recording-modal__desc voice-recording-modal__desc--center">
+            <p
+              id={DONE_MODAL_DESC_ID}
+              className="voice-recording-modal__desc voice-recording-modal__desc--center"
+            >
               이제 발표 연습모드에서 맞춤 피드백을 받아보세요.
             </p>
             <button
@@ -311,15 +399,29 @@ export default function VoiceRecordingPage() {
 
       {pageState === "later-warning" && (
         <div className="voice-recording-modal-overlay">
-          <div className="voice-recording-modal voice-recording-modal--warning">
+          <div
+            ref={modalRef}
+            className="voice-recording-modal voice-recording-modal--warning"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={WARNING_MODAL_TITLE_ID}
+            aria-describedby={WARNING_MODAL_DESC_ID}
+            tabIndex={-1}
+          >
             <div className="voice-recording-modal__warning-header">
               <span className="voice-recording-modal__warning-icon">⚠</span>
-              <p className="voice-recording-modal__warning-title">
+              <p
+                id={WARNING_MODAL_TITLE_ID}
+                className="voice-recording-modal__warning-title"
+              >
                 음성 분석이 필요해요
               </p>
             </div>
 
-            <div className="voice-recording-modal__warning-copy">
+            <div
+              id={WARNING_MODAL_DESC_ID}
+              className="voice-recording-modal__warning-copy"
+            >
               <p>맞춤 피드백을 위해 짧은 예문 녹음이 필요해요.</p>
               <p>발표 스타일을 분석해 맞춤 가이드를 제공해드릴게요.</p>
             </div>
@@ -331,7 +433,7 @@ export default function VoiceRecordingPage() {
             <button
               type="button"
               className="voice-recording-card__primary-btn voice-recording-card__primary-btn--full"
-              onClick={() => setPageState("default")}
+              onClick={handleCloseLaterWarning}
             >
               지금 녹음하기
             </button>

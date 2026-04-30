@@ -7,19 +7,30 @@ export type UploadVoiceProfileResponse = {
   isMock?: boolean;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+const sleep = (ms: number) =>
+  new Promise((resolve) => window.setTimeout(resolve, ms));
 
 export async function uploadVoiceProfileRecording(audioBlob: Blob) {
-  const endpoint = import.meta.env.VITE_VOICE_PROFILE_ENDPOINT;
+  const endpoint = import.meta.env.VITE_VOICE_PROFILE_ENDPOINT?.trim();
+  const isMockAllowed =
+    import.meta.env.DEV || import.meta.env.MODE === "test";
 
   if (!endpoint) {
-    await sleep(1400);
-    return {
-      success: true,
-      analysisId: `mock-${Date.now()}`,
-      status: "completed",
-      isMock: true,
-    } satisfies UploadVoiceProfileResponse;
+    const message = "VITE_VOICE_PROFILE_ENDPOINT가 설정되지 않았습니다.";
+
+    if (isMockAllowed) {
+      await sleep(1400);
+
+      return {
+        success: true,
+        analysisId: `mock-${Date.now()}`,
+        status: "completed",
+        isMock: true,
+      } satisfies UploadVoiceProfileResponse;
+    }
+
+    console.error(message);
+    throw new Error(message);
   }
 
   const extension = audioBlob.type.includes("mp4") ? "m4a" : "webm";
@@ -30,11 +41,7 @@ export async function uploadVoiceProfileRecording(audioBlob: Blob) {
   const formData = new FormData();
   formData.append("audio", file);
 
-  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData);
 
   if (!data.success) {
     throw new Error("음성 분석 요청에 실패했습니다.");
