@@ -20,6 +20,8 @@ export type ScriptResponse = {
   id: number;
   title: string;
   content: string;
+  markedContent?: string;
+  marked_content?: string;
   createdAt?: string;
 };
 
@@ -68,6 +70,14 @@ export async function getScripts() {
   const { data } = await api.get<ApiResponse<ScriptResponse[]>>("/api/scripts");
 
   return unwrapResponse(data, "대본 목록을 불러오지 못했습니다.");
+}
+
+export async function getScript(scriptId: number) {
+  const { data } = await api.get<ApiResponse<ScriptResponse>>(
+    `/api/scripts/${scriptId}`,
+  );
+
+  return unwrapResponse(data, "대본 상세 정보를 불러오지 못했습니다.");
 }
 
 export async function addScript(payload: AddScriptRequest) {

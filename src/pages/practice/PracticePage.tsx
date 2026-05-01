@@ -18,6 +18,7 @@ import {
   stopPractice,
   type SpeechStyle,
 } from "../../api/practice";
+import { getScript } from "../../api/scripts";
 import type {
   FeedbackIssue,
   FeedbackMetricId,
@@ -154,8 +155,13 @@ export default function PracticePage() {
   const routeState =
     (location.state as PracticeRouteState | null) ?? getStoredPracticeRouteState();
   const scriptId = routeState?.scriptId ?? null;
-  const practiceTitle = routeState?.scriptTitle || "Title";
-  const practiceScript = routeState?.scriptContent || SCRIPT_TEXT;
+  const [practiceTitle, setPracticeTitle] = useState(routeState?.scriptTitle || "Title");
+  const [practiceScript, setPracticeScript] = useState(
+    routeState?.scriptContent || SCRIPT_TEXT,
+  );
+  const [markedScript, setMarkedScript] = useState(
+    routeState?.scriptContent || SCRIPT_TEXT,
+  );
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(
@@ -176,6 +182,7 @@ export default function PracticePage() {
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const realtime = usePracticeRealtime();
+  const displayedScript = isReadingMarksEnabled ? markedScript : practiceScript;
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -208,6 +215,42 @@ export default function PracticePage() {
       previewAudioRef.current?.pause();
     };
   }, []);
+
+  useEffect(() => {
+    if (!scriptId) return;
+
+    let isMounted = true;
+
+    const loadScriptDetail = async () => {
+      try {
+        const script = await getScript(scriptId);
+
+        if (!isMounted) return;
+
+        const content = script.content || routeState?.scriptContent || SCRIPT_TEXT;
+        const nextMarkedScript =
+          script.markedContent || script.marked_content || content;
+
+        setPracticeTitle(script.title || routeState?.scriptTitle || "Title");
+        setPracticeScript(content);
+        setMarkedScript(nextMarkedScript);
+      } catch (error) {
+        if (!isMounted) return;
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "대본 상세 정보를 불러오지 못했습니다.";
+        setPracticeError(message);
+      }
+    };
+
+    void loadScriptDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [scriptId, routeState?.scriptContent, routeState?.scriptTitle]);
 
   useEffect(() => {
     if (status !== "recording") return;
@@ -451,7 +494,7 @@ export default function PracticePage() {
             <>
               <ScriptPanel
                 title={practiceTitle}
-                script={practiceScript}
+                script={displayedScript}
                 time={formattedTime}
                 isRecording={isRecording}
                 statusText={recordingStatusText}

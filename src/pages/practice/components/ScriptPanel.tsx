@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { RealtimeHighlight } from "../types";
 
 type ScriptPanelProps = {
@@ -86,17 +86,68 @@ function getHighlightRanges(script: string, highlight?: RealtimeHighlight | null
 }
 
 function renderLineWithHighlight(line: string, range?: HighlightRange) {
-  if (!range) return line || "\u00A0";
+  if (!range) return renderMarkedText(line);
 
   return (
     <>
-      {line.slice(0, range.startOffset)}
+      {renderMarkedText(line.slice(0, range.startOffset), "before")}
       <mark className="script-panel__realtime-highlight">
-        {line.slice(range.startOffset, range.endOffset)}
+        {renderMarkedText(line.slice(range.startOffset, range.endOffset), "highlight")}
       </mark>
-      {line.slice(range.endOffset) || ""}
+      {renderMarkedText(line.slice(range.endOffset), "after")}
     </>
   );
+}
+
+function renderMarkedText(text: string, keyPrefix = "text") {
+  if (!text) return "\u00A0";
+
+  const parts: ReactNode[] = [];
+  const markPattern = /(\*\[[^\]]+\]\*|\*[^*\s][^*]*\*|\/\/|\/)/g;
+  let lastIndex = 0;
+  let matchIndex = 0;
+
+  for (const match of text.matchAll(markPattern)) {
+    const matchedText = match[0];
+    const startIndex = match.index ?? 0;
+
+    if (startIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, startIndex));
+    }
+
+    if (matchedText === "/" || matchedText === "//") {
+      parts.push(
+        <span
+          key={`${keyPrefix}-pause-${matchIndex}`}
+          className="script-panel__reading-pause"
+        >
+          {matchedText}
+        </span>,
+      );
+    } else {
+      const emphasisText = matchedText.startsWith("*[")
+        ? matchedText.slice(2, -2)
+        : matchedText.slice(1, -1);
+
+      parts.push(
+        <span
+          key={`${keyPrefix}-emphasis-${matchIndex}`}
+          className="script-panel__reading-emphasis"
+        >
+          {emphasisText}
+        </span>,
+      );
+    }
+
+    lastIndex = startIndex + matchedText.length;
+    matchIndex += 1;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
 }
 
 export default function ScriptPanel({
