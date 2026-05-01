@@ -38,7 +38,11 @@ export default function PracticeStyleModal({
     null,
   );
   const recommendedOption = speechStyleOptions[0];
-  const selectedStyleId = selectedStyle ?? speechStyleOptions[0]?.id ?? null;
+  const selectedStyleId =
+    selectedStyle !== null &&
+    speechStyleOptions.some((option) => option.id === selectedStyle)
+      ? selectedStyle
+      : null;
 
   const handlePreviewTts = (styleId: SpeechStyleId) => {
     onPreviewTts?.(styleId);
