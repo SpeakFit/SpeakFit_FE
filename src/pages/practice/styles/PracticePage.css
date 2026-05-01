@@ -140,8 +140,17 @@
   font-size: 27px;
   line-height: 1.7;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #202938;
+}
+
+.script-panel__realtime-highlight {
+  border-radius: 6px;
+  padding: 0 4px;
+  background: linear-gradient(180deg, rgba(255, 241, 143, 0.32) 0%, rgba(255, 226, 86, 0.72) 100%);
+  color: inherit;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .script-panel__footer {
@@ -165,6 +174,15 @@
 .script-panel__legend-item.is-accent {
   color: #33cbbd;
   font-weight: 700;
+}
+
+.script-panel__legend-item.is-live {
+  max-width: min(420px, 40vw);
+  overflow: hidden;
+  color: #202938;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .script-panel__toggle {

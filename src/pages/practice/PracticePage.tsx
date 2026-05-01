@@ -456,6 +456,8 @@ export default function PracticePage() {
                 isRecording={isRecording}
                 statusText={recordingStatusText}
                 isReadingMarksEnabled={isReadingMarksEnabled}
+                realtimeHighlight={realtime.highlight}
+                realtimeTranscript={realtime.transcript}
                 onToggleReadingMarks={setIsReadingMarksEnabled}
               />
 
