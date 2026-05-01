@@ -195,7 +195,10 @@ export default function useAudioMeter(): UseAudioMeterResult {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
 
-      if (!recorder || (status !== "recording" && status !== "paused")) {
+      if (
+        !recorder ||
+        (recorder.state !== "recording" && recorder.state !== "paused")
+      ) {
         resolve(null);
         return;
       }
@@ -222,7 +225,7 @@ export default function useAudioMeter(): UseAudioMeterResult {
 
       recorder.stop();
     });
-  }, [cleanupAudioNodes, cleanupStream, status]);
+  }, [cleanupAudioNodes, cleanupStream]);
 
   useEffect(() => {
     return () => {
