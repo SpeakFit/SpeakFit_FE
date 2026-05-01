@@ -39,3 +39,11 @@ export type FeedbackIssue = {
   title: string;
   description: string;
 };
+
+export type RealtimeHighlight = {
+  wordIndex?: number;
+  lineIndex?: number;
+  startOffset?: number;
+  endOffset?: number;
+  text?: string;
+};

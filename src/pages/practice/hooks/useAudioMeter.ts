@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type RecorderStatus = "idle" | "recording" | "paused";
+type AudioChunkHandler = (chunk: Blob) => void;
+
+type UseAudioMeterOptions = {
+  onAudioChunk?: AudioChunkHandler;
+};
 
 type UseAudioMeterResult = {
   status: RecorderStatus;
@@ -15,7 +20,9 @@ type UseAudioMeterResult = {
   stopRecording: () => Promise<Blob | null>;
 };
 
-export default function useAudioMeter(): UseAudioMeterResult {
+export default function useAudioMeter(
+  options: UseAudioMeterOptions = {},
+): UseAudioMeterResult {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -32,6 +39,13 @@ export default function useAudioMeter(): UseAudioMeterResult {
   const animationFrameRef = useRef<number | null>(null);
 
   const mimeTypeRef = useRef<string>("");
+  const onAudioChunkRef = useRef<AudioChunkHandler | null>(
+    options.onAudioChunk ?? null,
+  );
+
+  useEffect(() => {
+    onAudioChunkRef.current = options.onAudioChunk ?? null;
+  }, [options.onAudioChunk]);
 
   const stopMeterLoop = useCallback(() => {
     if (animationFrameRef.current !== null) {
@@ -125,10 +139,11 @@ export default function useAudioMeter(): UseAudioMeterResult {
       mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          onAudioChunkRef.current?.(event.data);
         }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(500);
 
       const audioContext = new AudioContext();
       const analyser = audioContext.createAnalyser();
