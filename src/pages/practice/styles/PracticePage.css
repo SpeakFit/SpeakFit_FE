@@ -153,6 +153,16 @@
   -webkit-box-decoration-break: clone;
 }
 
+.script-panel__reading-emphasis {
+  color: #33cbbd;
+  font-weight: 700;
+}
+
+.script-panel__reading-pause {
+  color: #9aa3af;
+  font-weight: 500;
+}
+
 .script-panel__footer {
   border-top: 1px solid #edf1f4;
   padding: 16px 34px 14px;
