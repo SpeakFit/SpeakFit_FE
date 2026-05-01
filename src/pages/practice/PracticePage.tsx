@@ -399,11 +399,13 @@ export default function PracticePage() {
       return;
     }
 
+    setStage("recording");
+
     try {
       await requestStartPractice(practiceId);
-      setStage("recording");
     } catch (error) {
       await stopRecording();
+      setStage("ready");
       setNextTriggerTime(null);
       const message =
         error instanceof Error ? error.message : "연습 시작 요청에 실패했습니다.";
