@@ -369,7 +369,14 @@ const ScriptPage = () => {
       try {
         await saveSelectedScript(selectedScript);
       } catch (saveError) {
-        console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.", saveError);
+        if (import.meta.env.DEV && saveError instanceof Error) {
+          console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.", {
+            message: saveError.message,
+            stack: saveError.stack,
+          });
+        } else {
+          console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.");
+        }
       }
 
       navigate("/practice", { state: practiceState });
