@@ -24,14 +24,16 @@ const WS_READY_OPEN = 1;
 
 function getRealtimeWsUrl(practiceId: number) {
   const configuredUrl = import.meta.env.VITE_PRACTICE_WS_URL as string | undefined;
+  const aiBaseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  const fallbackUrl = apiBaseUrl?.replace(/^http/, "ws");
-  const baseUrl = configuredUrl ?? fallbackUrl;
+  const realtimeBaseUrl = configuredUrl ?? aiBaseUrl ?? apiBaseUrl;
 
-  if (!baseUrl) return null;
+  if (!realtimeBaseUrl) return null;
 
-  const url = new URL(baseUrl);
+  const url = new URL(realtimeBaseUrl);
   const token = getStoredAccessToken();
+
+  url.protocol = url.protocol.replace(/^http/, "ws");
 
   url.searchParams.set("practiceId", String(practiceId));
   if (token) url.searchParams.set("token", token);
