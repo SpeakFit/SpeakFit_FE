@@ -1,12 +1,28 @@
 import { useMemo, useState } from "react";
 import type { SpeechStyleId } from "../types";
-import type { SpeechStyle } from "../../../api/practice";
+import type { SpeechStyle, StyleType } from "../../../api/practice";
+
+const STYLE_TITLE_BY_TYPE: Record<StyleType, string> = {
+  CALM_LOW_TONE: "차분한 스타일",
+  STANDARD_LECTURE: "지적인 스타일",
+  ENERGETIC_FAST: "열정적인 스타일",
+  DELIVERY: "전달력 있는 스타일",
+};
+
+const STYLE_DISPLAY_ORDER: StyleType[] = [
+  "ENERGETIC_FAST",
+  "STANDARD_LECTURE",
+  "CALM_LOW_TONE",
+  "DELIVERY",
+];
 
 type SpeechStyleOption = {
   id: SpeechStyleId;
+  styleType?: StyleType;
   title: string;
   description: string;
   sampleAudioUrl?: string;
+  isRecommended: boolean;
 };
 
 type PracticeStyleModalProps = {
@@ -28,23 +44,46 @@ export default function PracticeStyleModal({
 }: PracticeStyleModalProps) {
   const speechStyleOptions: SpeechStyleOption[] = useMemo(
     () =>
-      styles.map((style, index) => ({
-        id: style.styleId,
-        title: index === 0 ? "추천 스타일" : `스타일 ${index + 1}`,
-        description: style.description,
-        sampleAudioUrl: style.sampleAudioUrl,
-      })),
+      styles
+        .map((style, index) => ({
+          id: style.styleId,
+          styleType: style.styleType,
+          title: style.styleType
+            ? STYLE_TITLE_BY_TYPE[style.styleType]
+            : index === 0
+              ? "추천 스타일"
+              : `스타일 ${index + 1}`,
+          description: style.description,
+          sampleAudioUrl: style.guideAudioUrl ?? style.sampleAudioUrl,
+          isRecommended: style.isRecommended ?? index === 0,
+        }))
+        .sort((a, b) => {
+          if (a.isRecommended !== b.isRecommended) {
+            return Number(b.isRecommended) - Number(a.isRecommended);
+          }
+
+          const aOrder = a.styleType
+            ? STYLE_DISPLAY_ORDER.indexOf(a.styleType)
+            : -1;
+          const bOrder = b.styleType
+            ? STYLE_DISPLAY_ORDER.indexOf(b.styleType)
+            : -1;
+
+          return (aOrder === -1 ? 99 : aOrder) - (bOrder === -1 ? 99 : bOrder);
+        }),
     [styles],
   );
   const [selectedStyle, setSelectedStyle] = useState<SpeechStyleId | null>(
     null,
   );
-  const recommendedOption = speechStyleOptions[0];
+  const recommendedOption =
+    speechStyleOptions.find((option) => option.isRecommended) ??
+    speechStyleOptions[0];
   const selectedStyleId =
     selectedStyle !== null &&
     speechStyleOptions.some((option) => option.id === selectedStyle)
       ? selectedStyle
-      : null;
+      : recommendedOption?.id ?? null;
 
   const handlePreviewTts = (styleId: SpeechStyleId) => {
     onPreviewTts?.(styleId);
@@ -94,7 +133,7 @@ export default function PracticeStyleModal({
 
           {!isLoading && !errorMessage && (
             <div className="practice-style-grid">
-              {speechStyleOptions.map((option, index) => {
+              {speechStyleOptions.map((option) => {
                 const isSelected = selectedStyleId === option.id;
 
                 return (
@@ -122,7 +161,7 @@ export default function PracticeStyleModal({
                       </svg>
                     </button>
 
-                    {index === 0 && (
+                    {option.isRecommended && (
                       <span className="practice-style-card__badge">추천</span>
                     )}
 
