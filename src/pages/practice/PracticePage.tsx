@@ -10,6 +10,7 @@ import FeedbackScriptPanel from "./components/FeedbackScriptPanel";
 import PracticeIntroModal from "./components/PracticeIntroModal";
 import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
+import usePracticeRealtime from "./hooks/usePracticeRealtime";
 import {
   inputPracticeInfo,
   selectPracticeStyle,
@@ -174,6 +175,7 @@ export default function PracticePage() {
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const realtime = usePracticeRealtime();
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -197,7 +199,9 @@ export default function PracticePage() {
     pauseRecording: hookPauseRecording,
     resumeRecording: hookResumeRecording,
     stopRecording,
-  } = useAudioMeter();
+  } = useAudioMeter({
+    onAudioChunk: realtime.sendAudioChunk,
+  });
 
   useEffect(() => {
     return () => {
@@ -369,11 +373,13 @@ export default function PracticePage() {
     }
 
     setStage("recording");
+    realtime.connect(practiceId, practiceScript);
 
     try {
       await requestStartPractice(practiceId);
     } catch (error) {
       await stopRecording();
+      realtime.disconnect();
       setStage("ready");
       setNextTriggerTime(null);
       const message =
@@ -384,11 +390,13 @@ export default function PracticePage() {
 
   const pauseRecording = () => {
     hookPauseRecording();
+    realtime.sendControl("pause");
     setStage("paused");
   };
 
   const resumeRecording = () => {
     hookResumeRecording();
+    realtime.sendControl("resume");
     setStage("recording");
   };
 
@@ -397,6 +405,7 @@ export default function PracticePage() {
       const finalBlob = await stopRecording();
       setActiveFeedbackMetric(null);
       setStage("record-finished");
+      realtime.disconnect();
 
       if (practiceId && finalBlob) {
         await stopPractice(practiceId, finalBlob, elapsedSeconds);
@@ -519,6 +528,11 @@ export default function PracticePage() {
         {practiceError && (
           <p className="practice-page__recording-error">{practiceError}</p>
         )}
+        {realtime.errorMessage && (
+          <p className="practice-page__recording-error">
+            {realtime.errorMessage}
+          </p>
+        )}
 
         {stage === "intro-modal" && (
           <PracticeIntroModal
@@ -560,6 +574,7 @@ export default function PracticePage() {
                     className="practice-modal__confirm is-enabled"
                     onClick={() => {
                       hookResumeRecording();
+                      realtime.sendControl("resume");
                       setStage("recording");
                       setTimeExceededType(null);
                       setNextTriggerTime(elapsedSeconds + 600); // 다음 초과 시점 10분 후로 설정
