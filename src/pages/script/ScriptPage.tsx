@@ -139,6 +139,7 @@ const ScriptPage = () => {
   const hasSelectedScript = !!selectedScript;
   const selectedContent = getScriptContent(selectedScript);
   const hasContent = !!selectedContent.trim();
+  const canStartPractice = hasSelectedScript && hasContent;
 
   const isActionEnabled = !!(
     selectedScript &&
@@ -343,13 +344,12 @@ const ScriptPage = () => {
   };
 
   const handleStartPractice = async () => {
-    if (!selectedScript) return;
+    if (!selectedScript || !canStartPractice) return;
 
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
-      const payload = buildAiPayload(selectedScript);
       const practiceState: PracticeRouteState = {
         scriptTitle: selectedScript.title.trim(),
         scriptContent: selectedContent.trim(),
@@ -357,7 +357,7 @@ const ScriptPage = () => {
           audienceAge: selectedScript.audienceAge,
           audienceKnowledge: selectedScript.audienceLevel,
           speechType: selectedScript.purpose,
-          duration: String(payload.time),
+          duration: selectedScript.duration.trim(),
         },
       };
 
@@ -663,7 +663,7 @@ const ScriptPage = () => {
               <button
                 type="button"
                 className="script-page__start-btn"
-                disabled={isSubmitting || !hasContent || !isActionEnabled}
+                disabled={isSubmitting || !canStartPractice}
                 onClick={handleStartPractice}
               >
                 발표 연습 시작하기
