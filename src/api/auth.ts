@@ -6,6 +6,10 @@ import {
 import type { ApiResponse } from "./response";
 import { unwrapResponse } from "./response";
 
+const ACCESS_TOKEN_KEY = "speakfit_access_token";
+const USER_KEY = "speakfit_user";
+const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
+
 export type SignUpRequest = {
   email: string;
   birthday: string;
@@ -57,15 +61,16 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
   persistAuthSession(auth.accessToken, auth.user, keepLogin);
 }
 
-export function getStoredUser(): UserInfo | null {
-  const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
+export function getStoredUser(): StoredUserInfo | null {
+  const raw =
+    localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
 
   if (!raw) {
     return null;
   }
 
   try {
-    return JSON.parse(raw) as UserInfo;
+    return JSON.parse(raw) as StoredUserInfo;
   } catch {
     return null;
   }
@@ -78,8 +83,6 @@ export function clearAuthSession() {
   sessionStorage.removeItem(USER_KEY);
 }
 
-const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
-
 function getVoiceOnboardingSeenKey(userId: number) {
   return `${VOICE_ONBOARDING_SEEN_KEY_PREFIX}_${userId}`;
 }
@@ -91,7 +94,9 @@ export function hasSeenVoiceOnboarding() {
     return false;
   }
 
-  return localStorage.getItem(getVoiceOnboardingSeenKey(user.userId)) === "true";
+  return (
+    localStorage.getItem(getVoiceOnboardingSeenKey(user.userId)) === "true"
+  );
 }
 
 export function markVoiceOnboardingSeen() {
