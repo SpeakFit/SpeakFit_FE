@@ -14,6 +14,7 @@ type PracticeStyleModalProps = {
   isLoading: boolean;
   errorMessage: string | null;
   onPreviewTts?: (styleId: SpeechStyleId) => void;
+  onRetry: () => void;
   onConfirm: (styleId: SpeechStyleId) => void;
 };
 
@@ -22,6 +23,7 @@ export default function PracticeStyleModal({
   isLoading,
   errorMessage,
   onPreviewTts,
+  onRetry,
   onConfirm,
 }: PracticeStyleModalProps) {
   const speechStyleOptions: SpeechStyleOption[] = useMemo(
@@ -75,10 +77,19 @@ export default function PracticeStyleModal({
             </p>
           )}
 
-          {errorMessage && (
-            <p className="practice-style-modal__message is-error">
-              {errorMessage}
-            </p>
+          {errorMessage && !isLoading && (
+            <div className="practice-style-modal__error">
+              <p className="practice-style-modal__message is-error">
+                {errorMessage}
+              </p>
+              <button
+                type="button"
+                className="practice-style-modal__retry"
+                onClick={onRetry}
+              >
+                다시 불러오기
+              </button>
+            </div>
           )}
 
           {!isLoading && !errorMessage && (

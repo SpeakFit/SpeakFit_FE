@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
@@ -176,6 +176,7 @@ export default function PracticePage() {
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isMountedRef = useRef(false);
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -201,41 +202,46 @@ export default function PracticePage() {
     stopRecording,
   } = useAudioMeter();
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadStyles = useCallback(async () => {
+    setIsStylesLoading(true);
+    setStylesError(null);
 
-    const loadStyles = async () => {
-      setIsStylesLoading(true);
-      setStylesError(null);
-
-      try {
-        const styles = await getSpeechStyles();
-        if (!isMounted) return;
-        setSpeechStyles(styles);
-        if (styles.length === 0) {
-          setStylesError("선택 가능한 스피치 스타일이 없습니다.");
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        const message =
-          error instanceof Error
-            ? error.message
-            : "스피치 스타일을 불러오지 못했습니다.";
-        setStylesError(message);
-      } finally {
-        if (isMounted) {
-          setIsStylesLoading(false);
-        }
+    try {
+      const styles = await getSpeechStyles();
+      if (!isMountedRef.current) return;
+      setSpeechStyles(styles);
+      if (styles.length === 0) {
+        setStylesError("선택 가능한 스피치 스타일이 없습니다.");
       }
-    };
+    } catch (error) {
+      if (!isMountedRef.current) return;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "스피치 스타일을 불러오지 못했습니다.";
+      setStylesError(message);
+    } finally {
+      if (isMountedRef.current) {
+        setIsStylesLoading(false);
+      }
+    }
+  }, []);
 
+  useEffect(() => {
+    isMountedRef.current = true;
     void loadStyles();
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       previewAudioRef.current?.pause();
     };
-  }, []);
+  }, [loadStyles]);
+
+  useEffect(() => {
+    if (stage === "style-modal") {
+      void loadStyles();
+    }
+  }, [loadStyles, stage]);
 
   useEffect(() => {
     if (status !== "recording") return;
@@ -558,6 +564,7 @@ export default function PracticePage() {
             isLoading={isStylesLoading || isSubmittingPractice}
             errorMessage={stylesError}
             onPreviewTts={handlePreviewStyleTts}
+            onRetry={loadStyles}
             onConfirm={handleConfirmStyle}
           />
         )}
