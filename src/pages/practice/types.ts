@@ -17,7 +17,14 @@ export type IntroFormState = {
   duration: string;
 };
 
-export type SpeechStyleId = "passionate" | "intellectual" | "calm" | "dynamic";
+export type PracticeRouteState = {
+  scriptId: number;
+  scriptTitle: string;
+  scriptContent: string;
+  introForm: IntroFormState;
+};
+
+export type SpeechStyleId = number;
 
 export type FeedbackMetricId =
   | "speech-rate"

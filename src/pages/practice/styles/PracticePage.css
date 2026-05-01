@@ -1112,6 +1112,37 @@
   color: #7b8495;
 }
 
+.practice-style-modal__message {
+  margin: 24px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #697386;
+  text-align: center;
+}
+
+.practice-style-modal__message.is-error {
+  color: #dc2626;
+}
+
+.practice-style-modal__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.practice-style-modal__retry {
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: #58cabd;
+  padding: 0 22px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .practice-style-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
