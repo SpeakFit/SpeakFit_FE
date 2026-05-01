@@ -46,6 +46,23 @@ type SpeechStylesResponse = {
   styles?: SpeechStyle[];
 };
 
+const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+  "audio/mp4": "mp4",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/webm": "webm",
+};
+
+function getAudioFileName(audio: Blob) {
+  const mimeType = audio.type.split(";")[0]?.toLowerCase();
+  const extension = mimeType
+    ? AUDIO_EXTENSION_BY_MIME_TYPE[mimeType] ?? "webm"
+    : "webm";
+
+  return `practice-recording.${extension}`;
+}
+
 export async function addScript(payload: AddScriptRequest) {
   const { data } = await api.post<ApiResponse<ScriptResponse>>(
     "/api/scripts",
@@ -98,7 +115,7 @@ export async function stopPractice(
   time: number,
 ) {
   const formData = new FormData();
-  formData.append("audio", audio, "practice-recording.webm");
+  formData.append("audio", audio, getAudioFileName(audio));
   formData.append("time", String(time));
 
   const { data } = await api.post<ApiResponse<ScriptResponse>>(
