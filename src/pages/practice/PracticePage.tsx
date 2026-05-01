@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
@@ -11,7 +11,6 @@ import PracticeIntroModal from "./components/PracticeIntroModal";
 import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
 import {
-  getSpeechStyles,
   inputPracticeInfo,
   selectPracticeStyle,
   startPractice as requestStartPractice,
@@ -171,12 +170,10 @@ export default function PracticePage() {
   const [nextTriggerTime, setNextTriggerTime] = useState<number | null>(null);
   const [practiceId, setPracticeId] = useState<number | null>(null);
   const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
-  const [isStylesLoading, setIsStylesLoading] = useState(false);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
-  const isMountedRef = useRef(false);
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -202,46 +199,11 @@ export default function PracticePage() {
     stopRecording,
   } = useAudioMeter();
 
-  const loadStyles = useCallback(async () => {
-    setIsStylesLoading(true);
-    setStylesError(null);
-
-    try {
-      const styles = await getSpeechStyles();
-      if (!isMountedRef.current) return;
-      setSpeechStyles(styles);
-      if (styles.length === 0) {
-        setStylesError("선택 가능한 스피치 스타일이 없습니다.");
-      }
-    } catch (error) {
-      if (!isMountedRef.current) return;
-      const message =
-        error instanceof Error
-          ? error.message
-          : "스피치 스타일을 불러오지 못했습니다.";
-      setStylesError(message);
-    } finally {
-      if (isMountedRef.current) {
-        setIsStylesLoading(false);
-      }
-    }
-  }, []);
-
   useEffect(() => {
-    isMountedRef.current = true;
-    void loadStyles();
-
     return () => {
-      isMountedRef.current = false;
       previewAudioRef.current?.pause();
     };
-  }, [loadStyles]);
-
-  useEffect(() => {
-    if (stage === "style-modal") {
-      void loadStyles();
-    }
-  }, [loadStyles, stage]);
+  }, []);
 
   useEffect(() => {
     if (status !== "recording") return;
@@ -336,7 +298,13 @@ export default function PracticePage() {
         targetTime: Number(introForm.duration),
       });
 
-      setPracticeId(practice.id);
+      setPracticeId(practice.practiceId);
+      setSpeechStyles(practice.styleList);
+      setStylesError(
+        practice.styleList.length === 0
+          ? "선택 가능한 스피치 스타일이 없습니다."
+          : null,
+      );
       setStage("style-modal");
     } catch (error) {
       const message =
@@ -351,10 +319,11 @@ export default function PracticePage() {
 
   const handlePreviewStyleTts = (styleId: SpeechStyleId) => {
     const style = speechStyles.find((item) => item.styleId === styleId);
-    if (!style?.sampleAudioUrl) return;
+    const audioUrl = style?.guideAudioUrl ?? style?.sampleAudioUrl;
+    if (!audioUrl) return;
 
     previewAudioRef.current?.pause();
-    previewAudioRef.current = new Audio(style.sampleAudioUrl);
+    previewAudioRef.current = new Audio(audioUrl);
     void previewAudioRef.current.play();
   };
 
@@ -563,10 +532,10 @@ export default function PracticePage() {
         {stage === "style-modal" && (
           <PracticeStyleModal
             styles={speechStyles}
-            isLoading={isStylesLoading || isSubmittingPractice}
+            isLoading={isSubmittingPractice}
             errorMessage={stylesError}
             onPreviewTts={handlePreviewStyleTts}
-            onRetry={loadStyles}
+            onRetry={handleConfirmIntro}
             onConfirm={handleConfirmStyle}
           />
         )}

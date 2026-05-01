@@ -10,6 +10,11 @@ export type SpeechInformation =
   | "LECTURE"
   | "DISCUSSION"
   | "FEEDBACKPRACTICE";
+export type StyleType =
+  | "CALM_LOW_TONE"
+  | "STANDARD_LECTURE"
+  | "ENERGETIC_FAST"
+  | "DELIVERY";
 
 export type ScriptResponse = {
   id: number;
@@ -38,12 +43,20 @@ export type InputPracticeInfoRequest = {
 
 export type SpeechStyle = {
   styleId: number;
+  styleType?: StyleType;
   description: string;
+  guideAudioUrl?: string;
   sampleAudioUrl?: string;
+  isRecommended?: boolean;
 };
 
 type SpeechStylesResponse = {
   styles?: SpeechStyle[];
+};
+
+export type InputPracticeInfoResponse = {
+  practiceId: number;
+  styleList: SpeechStyle[];
 };
 
 const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
@@ -76,7 +89,7 @@ export async function inputPracticeInfo(
   scriptId: number,
   payload: InputPracticeInfoRequest,
 ) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<InputPracticeInfoResponse>>(
     `/api/scripts/${scriptId}`,
     payload,
   );
