@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
@@ -10,6 +10,14 @@ import FeedbackScriptPanel from "./components/FeedbackScriptPanel";
 import PracticeIntroModal from "./components/PracticeIntroModal";
 import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
+import {
+  getSpeechStyles,
+  inputPracticeInfo,
+  selectPracticeStyle,
+  startPractice as requestStartPractice,
+  stopPractice,
+  type SpeechStyle,
+} from "../../api/practice";
 import type {
   FeedbackIssue,
   FeedbackMetricId,
@@ -96,10 +104,56 @@ const feedbackIssues: FeedbackIssue[] = [
   },
 ];
 
+function mapAudienceAge(value: IntroFormState["audienceAge"]) {
+  switch (value) {
+    case "어린이":
+      return "CHILD";
+    case "청소년":
+      return "YOUTH";
+    case "성인":
+      return "ADULT";
+    case "노년":
+      return "SENIOR";
+    default:
+      throw new Error("청중 연령대를 선택해주세요.");
+  }
+}
+
+function mapAudienceKnowledge(value: IntroFormState["audienceKnowledge"]) {
+  switch (value) {
+    case "잘 모름":
+      return "LOW";
+    case "보통":
+      return "MIDDLE";
+    case "잘 앎":
+      return "HIGH";
+    default:
+      throw new Error("청중 이해도를 선택해주세요.");
+  }
+}
+
+function mapSpeechType(value: IntroFormState["speechType"]) {
+  switch (value) {
+    case "발표":
+      return "PRESENTATION";
+    case "면접":
+      return "INTERVIEW";
+    case "강의":
+      return "LECTURE";
+    case "토론":
+      return "DISCUSSION";
+    case "피드백 연습":
+      return "FEEDBACKPRACTICE";
+    default:
+      throw new Error("스피치 유형을 선택해주세요.");
+  }
+}
+
 export default function PracticePage() {
   const location = useLocation();
   const routeState =
     (location.state as PracticeRouteState | null) ?? getStoredPracticeRouteState();
+  const scriptId = routeState?.scriptId ?? null;
   const practiceTitle = routeState?.scriptTitle || "Title";
   const practiceScript = routeState?.scriptContent || SCRIPT_TEXT;
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
@@ -115,6 +169,13 @@ export default function PracticePage() {
     "initial" | "periodic" | "max" | null
   >(null);
   const [nextTriggerTime, setNextTriggerTime] = useState<number | null>(null);
+  const [practiceId, setPracticeId] = useState<number | null>(null);
+  const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
+  const [isStylesLoading, setIsStylesLoading] = useState(false);
+  const [stylesError, setStylesError] = useState<string | null>(null);
+  const [practiceError, setPracticeError] = useState<string | null>(null);
+  const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -139,6 +200,42 @@ export default function PracticePage() {
     resumeRecording: hookResumeRecording,
     stopRecording,
   } = useAudioMeter();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStyles = async () => {
+      setIsStylesLoading(true);
+      setStylesError(null);
+
+      try {
+        const styles = await getSpeechStyles();
+        if (!isMounted) return;
+        setSpeechStyles(styles);
+        if (styles.length === 0) {
+          setStylesError("선택 가능한 스피치 스타일이 없습니다.");
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "스피치 스타일을 불러오지 못했습니다.";
+        setStylesError(message);
+      } finally {
+        if (isMounted) {
+          setIsStylesLoading(false);
+        }
+      }
+    };
+
+    void loadStyles();
+
+    return () => {
+      isMounted = false;
+      previewAudioRef.current?.pause();
+    };
+  }, []);
 
   useEffect(() => {
     if (status !== "recording") return;
@@ -213,27 +310,82 @@ export default function PracticePage() {
     return "--";
   }, [stage]);
 
-  const handleConfirmIntro = () => {
+  const handleConfirmIntro = async () => {
     if (!isIntroComplete) return;
-    setStage("style-modal");
+    if (!scriptId) {
+      setPracticeError("연습을 시작할 대본 정보가 없습니다. 대본 화면에서 다시 시작해주세요.");
+      return;
+    }
+
+    setPracticeError(null);
+    setIsSubmittingPractice(true);
+
+    try {
+      const practice = await inputPracticeInfo(scriptId, {
+        audienceType: mapAudienceAge(introForm.audienceAge),
+        audienceUnderstanding: mapAudienceKnowledge(
+          introForm.audienceKnowledge,
+        ),
+        speechInformation: mapSpeechType(introForm.speechType),
+        targetTime: Number(introForm.duration),
+      });
+
+      setPracticeId(practice.id);
+      setStage("style-modal");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "연습 정보 저장에 실패했습니다.";
+      setPracticeError(message);
+    } finally {
+      setIsSubmittingPractice(false);
+    }
   };
 
   const handlePreviewStyleTts = (styleId: SpeechStyleId) => {
-    // TODO: 백엔드 TTS 연동 시 선택한 styleId에 맞는 가이드 음성을 재생
-    console.log("TTS preview style", styleId);
+    const style = speechStyles.find((item) => item.styleId === styleId);
+    if (!style?.sampleAudioUrl) return;
+
+    previewAudioRef.current?.pause();
+    previewAudioRef.current = new Audio(style.sampleAudioUrl);
+    void previewAudioRef.current.play();
   };
 
-  const handleConfirmStyle = (styleId: SpeechStyleId) => {
-    // TODO: 백엔드 연동 시 선택한 styleId를 연습 세션 생성 요청에 포함
-    console.log("Selected speech style", styleId);
-    setStage("ready");
+  const handleConfirmStyle = async (styleId: SpeechStyleId) => {
+    if (!practiceId) {
+      setPracticeError("연습 정보가 저장되지 않았습니다. 다시 시도해주세요.");
+      return;
+    }
+
+    setPracticeError(null);
+    setIsSubmittingPractice(true);
+
+    try {
+      await selectPracticeStyle(practiceId, styleId);
+      setStage("ready");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "스피치 스타일 선택에 실패했습니다.";
+      setPracticeError(message);
+    } finally {
+      setIsSubmittingPractice(false);
+    }
   };
 
   const startRecording = async () => {
+    if (!practiceId) {
+      setPracticeError("연습 정보가 저장되지 않았습니다. 다시 시도해주세요.");
+      return;
+    }
+
     const durationNumber = Number(introForm.duration);
     const maxSeconds = durationNumber * 60;
     setElapsedSeconds(0);
     setNextTriggerTime(maxSeconds);
+    setPracticeError(null);
 
     const didStart = await hookStartRecording();
     if (!didStart) {
@@ -241,7 +393,16 @@ export default function PracticePage() {
       return;
     }
 
-    setStage("recording");
+    try {
+      await requestStartPractice(practiceId);
+      setStage("recording");
+    } catch (error) {
+      await stopRecording();
+      setNextTriggerTime(null);
+      const message =
+        error instanceof Error ? error.message : "연습 시작 요청에 실패했습니다.";
+      setPracticeError(message);
+    }
   };
 
   const pauseRecording = () => {
@@ -260,14 +421,13 @@ export default function PracticePage() {
       setActiveFeedbackMetric(null);
       setStage("record-finished");
 
-      // TODO: 백엔드 연동 후 finalBlob을 FormData로 업로드
-      // const formData = new FormData();
-      // formData.append("audio", finalBlob, "practice-recording.webm");
-      // await uploadPracticeAudio(formData);
-
-      console.log("최종 녹음 Blob", finalBlob);
+      if (practiceId && finalBlob) {
+        await stopPractice(practiceId, finalBlob, elapsedSeconds);
+      }
     } catch (error) {
-      console.error("녹음 종료 오류", error);
+      const message =
+        error instanceof Error ? error.message : "녹음 종료 처리에 실패했습니다.";
+      setPracticeError(message);
     }
   };
 
@@ -379,19 +539,24 @@ export default function PracticePage() {
         {recordingError && (
           <p className="practice-page__recording-error">{recordingError}</p>
         )}
+        {practiceError && (
+          <p className="practice-page__recording-error">{practiceError}</p>
+        )}
 
         {stage === "intro-modal" && (
           <PracticeIntroModal
             form={introForm}
             onChange={setIntroForm}
             onConfirm={handleConfirmIntro}
-            isConfirmEnabled={isIntroComplete}
+            isConfirmEnabled={isIntroComplete && !isSubmittingPractice}
           />
         )}
 
         {stage === "style-modal" && (
           <PracticeStyleModal
-            recommendedStyle="passionate"
+            styles={speechStyles}
+            isLoading={isStylesLoading || isSubmittingPractice}
+            errorMessage={stylesError}
             onPreviewTts={handlePreviewStyleTts}
             onConfirm={handleConfirmStyle}
           />

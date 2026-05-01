@@ -15,7 +15,6 @@ import {
 } from "../../api/scripts";
 import type { PracticeRouteState } from "../practice/types";
 
-
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
 type Purpose = "발표" | "면접" | "강의" | "토론" | "피드백 연습" | "";
@@ -350,7 +349,9 @@ const ScriptPage = () => {
     setErrorMessage("");
 
     try {
+      const scriptId = await saveSelectedScript(selectedScript);
       const practiceState: PracticeRouteState = {
+        scriptId,
         scriptTitle: selectedScript.title.trim(),
         scriptContent: selectedContent.trim(),
         introForm: {
@@ -365,19 +366,6 @@ const ScriptPage = () => {
         PRACTICE_ROUTE_STATE_KEY,
         JSON.stringify(practiceState)
       );
-
-      try {
-        await saveSelectedScript(selectedScript);
-      } catch (saveError) {
-        if (import.meta.env.DEV && saveError instanceof Error) {
-          console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.", {
-            message: saveError.message,
-            stack: saveError.stack,
-          });
-        } else {
-          console.warn("대본 저장 실패. 로컬 대본으로 연습을 시작합니다.");
-        }
-      }
 
       navigate("/practice", { state: practiceState });
     } catch (error) {
@@ -666,7 +654,7 @@ const ScriptPage = () => {
                 disabled={isSubmitting || !canStartPractice}
                 onClick={handleStartPractice}
               >
-                발표 연습 시작하기
+                {isSubmitting ? "처리 중..." : "발표 연습 시작하기"}
               </button>
             )}
           </div>

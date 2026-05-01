@@ -1112,6 +1112,18 @@
   color: #7b8495;
 }
 
+.practice-style-modal__message {
+  margin: 24px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #697386;
+  text-align: center;
+}
+
+.practice-style-modal__message.is-error {
+  color: #dc2626;
+}
+
 .practice-style-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

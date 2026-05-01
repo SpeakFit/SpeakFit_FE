@@ -3,13 +3,8 @@ import {
   saveAuthSession as persistAuthSession,
   type StoredUserInfo,
 } from "./authStorage";
-
-type ApiResponse<T> = {
-  code?: string;
-  message?: string;
-  result?: T;
-  success: boolean;
-};
+import type { ApiResponse } from "./response";
+import { unwrapResponse } from "./response";
 
 export type SignUpRequest = {
   email: string;
@@ -39,14 +34,6 @@ type LoginResponse = {
   accessToken: string;
   user: StoredUserInfo;
 };
-
-function unwrapResponse<T>(response: ApiResponse<T>, fallbackMessage: string) {
-  if (!response.success || !response.result) {
-    throw new Error(response.message || fallbackMessage);
-  }
-
-  return response.result;
-}
 
 export async function signUp(payload: SignUpRequest) {
   const { data } = await api.post<ApiResponse<SignUpResponse>>(
