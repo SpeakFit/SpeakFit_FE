@@ -169,6 +169,7 @@ export default function FeedbackAnalysisPage() {
     useState<FeedbackPageData>(EMPTY_DATA);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -200,7 +201,7 @@ export default function FeedbackAnalysisPage() {
             mapFeedbackResponse(detail as FeedbackDetailCompleted)
           );
         } else {
-          setErrorMessage(
+          setStatusMessage(
             "AI가 최근 연습 기록을 분석 중이에요. 잠시 후 다시 시도해주세요."
           );
         }
@@ -231,6 +232,12 @@ export default function FeedbackAnalysisPage() {
         {isLoading && (
           <p className="feedback-analysis-page__notice feedback-analysis-page__notice--info">
             피드백 결과를 불러오는 중이에요...
+          </p>
+        )}
+
+        {statusMessage && (
+          <p className="feedback-analysis-page__notice feedback-analysis-page__notice--info">
+            {statusMessage}
           </p>
         )}
 

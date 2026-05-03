@@ -12,7 +12,7 @@ export type FeedbackTrendComparison = {
 
 function parseLeadingNumber(text: string | null | undefined): number | null {
   if (!text) return null;
-  const match = text.replace(",", "").match(/-?\d+(\.\d+)?/);
+  const match = text.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
   if (!match) return null;
   const value = Number(match[0]);
   return Number.isNaN(value) ? null : value;

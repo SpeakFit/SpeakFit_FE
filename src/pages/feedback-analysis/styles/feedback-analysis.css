@@ -428,9 +428,9 @@
 }
 
 .feedback-trend__diff--down {
-  background: #ecfdf8;
-  color: #059669;
-  border: 1px solid #cff6ea;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .feedback-trend__diff--neutral {
