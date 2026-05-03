@@ -4,6 +4,7 @@ export type PracticeStage =
   | "ready"
   | "recording"
   | "paused"
+  | "analyzing"
   | "record-finished";
 
 export type AudienceAge = "어린이" | "청소년" | "성인" | "노년";
@@ -38,6 +39,24 @@ export type FeedbackIssue = {
   excerpt: string;
   title: string;
   description: string;
+};
+
+export type FeedbackMetric = {
+  id: FeedbackMetricId;
+  label: string;
+  value: string;
+  badge: string;
+  initial: string;
+  tone: "slate" | "amber" | "violet" | "green";
+};
+
+export type PracticeFeedbackReport = {
+  script: string;
+  goalPercent: number;
+  summary: string;
+  tip: string;
+  metrics: FeedbackMetric[];
+  issues: FeedbackIssue[];
 };
 
 export type RealtimeHighlight = {

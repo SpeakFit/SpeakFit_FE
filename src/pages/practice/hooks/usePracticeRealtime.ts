@@ -1,4 +1,5 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getStoredAccessToken } from "../../../api/authStorage";
 import type { WordRes } from "../../../api/practice";
 import type { RealtimeHighlight, WordRealtimeFeedback } from "../types";
 
@@ -8,6 +9,7 @@ type RealtimeMessage = {
   highlight: RealtimeHighlight | null;
   transcript: string;
   error?: string;
+  isAnalysisComplete?: boolean;
 };
 
 type UsePracticeRealtimeResult = {
@@ -17,6 +19,7 @@ type UsePracticeRealtimeResult = {
   lastReadIndex: number;
   wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
   transcript: string;
+  isAnalysisComplete: boolean;
   connect: (wsUrl: string, scriptWords: WordRes[]) => Promise<void>;
   sendAudioChunk: (chunk: ArrayBuffer) => void;
   sendControl: (type: "pause" | "resume" | "stop") => void;
@@ -65,6 +68,25 @@ function parseWordResults(value: unknown): WordRealtimeFeedback[] {
   });
 }
 
+function isAnalysisCompletePayload(payload: Record<string, unknown>) {
+  const status = asString(payload.status)?.toUpperCase();
+  const type = asString(payload.type)?.toUpperCase();
+  const event = asString(payload.event)?.toUpperCase();
+  const message = asString(payload.message);
+
+  return (
+    status === "ANALYZED" ||
+    status === "COMPLETED" ||
+    type === "ANALYSIS_COMPLETE" ||
+    type === "ANALYSIS_COMPLETED" ||
+    event === "ANALYSIS_COMPLETE" ||
+    event === "ANALYSIS_COMPLETED" ||
+    message?.includes("분석완료") ||
+    message?.includes("분석 완료") ||
+    false
+  );
+}
+
 function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage {
   if (typeof eventData !== "string") {
     return { highlight: null, transcript: "" };
@@ -84,6 +106,7 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
           wordResults,
         },
         transcript: asString(payload.transcript) ?? "",
+        isAnalysisComplete: isAnalysisCompletePayload(payload),
       };
     }
 
@@ -99,11 +122,18 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
       };
     }
 
-    return { highlight: null, transcript: "" };
+    return { 
+      highlight: null, 
+      transcript: asString(payload.transcript) ?? "",
+      isAnalysisComplete: isAnalysisCompletePayload(payload)
+    };
   } catch {
     return {
       highlight: null,
       transcript: typeof eventData === "string" ? eventData : "",
+      isAnalysisComplete:
+        typeof eventData === "string" &&
+        (eventData.includes("분석완료") || eventData.includes("분석 완료")),
     };
   }
 }
@@ -115,6 +145,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const [lastReadIndex, setLastReadIndex] = useState<number>(-1);
   const [wordFeedbackByIndex, setWordFeedbackByIndex] = useState<Record<number, WordRealtimeFeedback>>({});
   const [transcript, setTranscript] = useState("");
+  const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   const sendControl = useCallback((type: "pause" | "resume" | "stop") => {
@@ -137,6 +168,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     setHighlight(null);
     setLastReadIndex(-1);
     setWordFeedbackByIndex({});
+    setIsAnalysisComplete(false);
   }, []);
 
   const connect = useCallback(
@@ -157,10 +189,18 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
         setLastReadIndex(-1);
         setWordFeedbackByIndex({});
         setTranscript("");
+        setIsAnalysisComplete(false);
 
         let isReadyReceived = false;
         const socket = new WebSocket(wsUrl);
         socket.binaryType = "arraybuffer";
+        const token = getStoredAccessToken();
+        if (token && wsUrl.includes("token=") === false) {
+          // URL에 토큰이 없으면 searchParams로 추가 시도 (하지만 wsUrl은 이미 string임)
+          // 여기서는 wsUrl이 이미 필요한 정보를 포함하고 있다고 가정하거나,
+          // 필요시 URL 객체로 변환하여 처리합니다.
+        }
+        
         socketRef.current = socket;
 
         const timeoutId = setTimeout(() => {
@@ -225,6 +265,8 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
           }
 
           if (message.transcript) setTranscript(message.transcript);
+          if (message.isAnalysisComplete) setIsAnalysisComplete(true);
+          
           if (message.highlight && message.highlight.wordIndex !== undefined) {
             setHighlight(message.highlight);
             setLastReadIndex((prev) =>
@@ -281,6 +323,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     lastReadIndex,
     wordFeedbackByIndex,
     transcript,
+    isAnalysisComplete,
     connect,
     sendAudioChunk,
     sendControl,

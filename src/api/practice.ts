@@ -89,15 +89,95 @@ export type SentenceRes = {
   words: WordRes[];
 };
 
+export type SelectPracticeStyleResponse = {
+  practiceId: number;
+  styleType: StyleType;
+  contentList: PracticeContent[];
+};
+
 export type StartPracticeResponse = {
   practiceId: number;
   title: string;
-  webSocketUrl: string;
+  webSocketUrl?: string;
   status: string;
   contentList: PracticeContent[];
   sentences: SentenceRes[];
   scriptWords: WordRes[];
-  createdAt: string;
+  createdAt?: string;
+};
+
+export type StopPracticeResponse = {
+  practiceId: number;
+  status: "ANALYZING" | "ANALYZED" | string;
+  audioUrl: string;
+};
+
+export type PracticeAnalysisResult = {
+  wpm?: {
+    avg?: number;
+    diff?: number;
+  };
+  pitch?: {
+    avg?: number;
+    diff?: number;
+  };
+  intensity?: {
+    avg?: number;
+    diff?: number;
+  };
+  zcr?: {
+    avg?: number;
+    diff?: number;
+  };
+  pause?: {
+    ratio?: number;
+    count?: number;
+  };
+};
+
+export type PracticeAiAnalysisResult = {
+  aiSummary?: string;
+  wpmSummary?: string;
+  wpmFeedback?: string;
+  energySummary?: string;
+  energyFeedback?: string;
+  pauseFeedback?: string;
+  symbolFeedback?: string;
+  goalSimilarityScore?: number;
+  goalSummary?: string;
+  goalFeedback?: string;
+};
+
+export type PracticeIssueResponse = {
+  startIndex?: number;
+  endIndex?: number;
+  issueSummary?: string;
+  feedbackContent?: string;
+  wpm?: number;
+  intensity?: number;
+};
+
+export type PracticeSentenceResponse = {
+  index: number;
+  text?: string;
+  originalText?: string;
+  startTime?: number;
+  endTime?: number;
+  status?: string;
+};
+
+export type PracticeReportResponse = {
+  practiceId: number;
+  audioUrl?: string;
+  time?: number;
+  status?: string;
+  audienceType?: AudienceType;
+  audienceUnderstanding?: AudienceUnderstanding;
+  speechInformation?: SpeechInformation;
+  analysis?: PracticeAnalysisResult;
+  aiAnalysis?: PracticeAiAnalysisResult;
+  practiceIssues?: PracticeIssueResponse[];
+  sentences?: PracticeSentenceResponse[];
 };
 
 const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
@@ -147,7 +227,7 @@ export async function getSpeechStyles() {
 }
 
 export async function selectPracticeStyle(practiceId: number, styleId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<SelectPracticeStyleResponse>>(
     `/api/practices/${practiceId}/select-style`,
     { styleId },
   );
@@ -172,10 +252,18 @@ export async function stopPractice(
   formData.append("audio", audio, getAudioFileName(audio));
   formData.append("time", String(time));
 
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<StopPracticeResponse>>(
     `/api/practices/${practiceId}/stop`,
     formData,
   );
 
   return unwrapResponse(data, "연습 종료 요청에 실패했습니다.");
+}
+
+export async function getPracticeReport(practiceId: number) {
+  const { data } = await api.get<ApiResponse<PracticeReportResponse>>(
+    `/api/practices/${practiceId}/report`,
+  );
+
+  return unwrapResponse(data, "분석 리포트를 불러오지 못했습니다.");
 }
