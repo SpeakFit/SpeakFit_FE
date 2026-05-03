@@ -59,6 +59,19 @@ export type InputPracticeInfoResponse = {
   styleList: SpeechStyle[];
 };
 
+export type PracticeContentItem = {
+  index: number;
+  word: string;
+  hasBreak: boolean;
+  isEmphasis: boolean;
+};
+
+export type SelectPracticeStyleResponse = {
+  practiceId: number;
+  styleType: StyleType;
+  contentList: PracticeContentItem[];
+};
+
 export type StopPracticeResponse = {
   practiceId: number;
   status: "ANALYZING" | "ANALYZED" | string;
@@ -180,7 +193,7 @@ export async function getSpeechStyles() {
 }
 
 export async function selectPracticeStyle(practiceId: number, styleId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<SelectPracticeStyleResponse>>(
     `/api/practices/${practiceId}/select-style`,
     { styleId },
   );
