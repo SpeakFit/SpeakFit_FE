@@ -1,13 +1,13 @@
-﻿import { useMemo, type ReactNode } from "react";
-import type { PracticeContent, SentenceRes } from "../../../api/practice";
+import { useMemo, type ReactNode } from "react";
+import type { PracticeContentItem, StartPracticeSentence, StartPracticeWord } from "../../../api/practice";
 import type { RealtimeHighlight, WordRealtimeFeedback } from "../types";
 
 type ScriptPanelProps = {
   title: string;
   script: string;
   markedScript: string;
-  sentences: SentenceRes[];
-  contentList: PracticeContent[];
+  sentences: StartPracticeSentence[];
+  contentList: PracticeContentItem[];
   lastReadIndex: number;
   wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
   isRecording: boolean;
@@ -18,6 +18,7 @@ type ScriptPanelProps = {
   realtimeTranscript?: string;
   onToggleReadingMarks: (enabled: boolean) => void;
 };
+
 
 type WordToken = {
   type: "word";
@@ -127,7 +128,7 @@ export default function ScriptPanel({
     let currentParagraphTokens: ScriptToken[] = [];
     let lastProcessedCharIdx = 0;
 
-    const contentMap = new Map<number, PracticeContent>();
+    const contentMap = new Map<number, PracticeContentItem>();
     contentList.forEach((item) => contentMap.set(item.index, item));
 
     sentences.forEach((sentence) => {
@@ -141,7 +142,7 @@ export default function ScriptPanel({
         currentParagraphTokens.push({ type: "space", text: gap });
       }
 
-      sentence.words.forEach((word, wIdx) => {
+      sentence.words.forEach((word: StartPracticeWord, wIdx: number) => {
         const prevEnd = wIdx === 0 ? sentence.startCharIndex : sentence.words[wIdx - 1].endCharIndex;
         const wordGap = script.slice(prevEnd, word.startCharIndex);
         if (wordGap) {
@@ -153,7 +154,7 @@ export default function ScriptPanel({
           type: "word",
           text: word.text,
           index: word.globalWordIndex,
-          isEmphasis: meta?.isEmphasis || meta?.emphasis || false,
+          isEmphasis: meta?.isEmphasis || false,
           hasBreak: meta?.hasBreak ?? false,
         });
       });

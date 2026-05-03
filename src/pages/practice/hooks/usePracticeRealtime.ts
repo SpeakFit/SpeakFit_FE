@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getStoredAccessToken } from "../../../api/authStorage";
-import type { WordRes } from "../../../api/practice";
 import type { RealtimeHighlight, WordRealtimeFeedback } from "../types";
 
 type RealtimeStatus = "idle" | "connecting" | "connected" | "error";
