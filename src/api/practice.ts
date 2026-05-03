@@ -59,6 +59,47 @@ export type InputPracticeInfoResponse = {
   styleList: SpeechStyle[];
 };
 
+export type PracticeContent = {
+  index: number;
+  word: string;
+  hasBreak: boolean;
+  emphasis?: boolean;
+  isEmphasis?: boolean;
+};
+
+export type WordRes = {
+  scriptWordId: number;
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  globalWordIndex: number;
+  sentenceWordIndex: number;
+  text: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+};
+
+export type SentenceRes = {
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  originalText: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+  words: WordRes[];
+};
+
+export type StartPracticeResponse = {
+  practiceId: number;
+  title: string;
+  webSocketUrl: string;
+  status: string;
+  contentList: PracticeContent[];
+  sentences: SentenceRes[];
+  scriptWords: WordRes[];
+  createdAt: string;
+};
+
 const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   "audio/mp4": "mp4",
   "audio/mpeg": "mp3",
@@ -115,7 +156,7 @@ export async function selectPracticeStyle(practiceId: number, styleId: number) {
 }
 
 export async function startPractice(practiceId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<StartPracticeResponse>>(
     `/api/practices/${practiceId}`,
   );
 

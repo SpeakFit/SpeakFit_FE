@@ -1,45 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getStoredAccessToken } from "../../../api/authStorage";
-import type { RealtimeHighlight } from "../types";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
+import type { WordRes } from "../../../api/practice";
+import type { RealtimeHighlight, WordRealtimeFeedback } from "../types";
 
 type RealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 type RealtimeMessage = {
   highlight: RealtimeHighlight | null;
   transcript: string;
+  error?: string;
 };
 
 type UsePracticeRealtimeResult = {
   status: RealtimeStatus;
   errorMessage: string | null;
   highlight: RealtimeHighlight | null;
+  lastReadIndex: number;
+  wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
   transcript: string;
-  connect: (practiceId: number, script: string) => void;
-  sendAudioChunk: (chunk: Blob) => void;
+  connect: (wsUrl: string, scriptWords: WordRes[]) => Promise<void>;
+  sendAudioChunk: (chunk: ArrayBuffer) => void;
   sendControl: (type: "pause" | "resume" | "stop") => void;
   disconnect: () => void;
 };
 
 const WS_READY_OPEN = 1;
-
-function getRealtimeWsUrl(practiceId: number) {
-  const configuredUrl = import.meta.env.VITE_PRACTICE_WS_URL as string | undefined;
-  const aiBaseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  const realtimeBaseUrl = configuredUrl ?? aiBaseUrl ?? apiBaseUrl;
-
-  if (!realtimeBaseUrl) return null;
-
-  const url = new URL(realtimeBaseUrl);
-  const token = getStoredAccessToken();
-
-  url.protocol = url.protocol.replace(/^http/, "ws");
-
-  url.searchParams.set("practiceId", String(practiceId));
-  if (token) url.searchParams.set("token", token);
-
-  return url.toString();
-}
 
 function asNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -55,6 +39,32 @@ function asString(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
+function parseWordResults(value: unknown): WordRealtimeFeedback[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const source = item as Record<string, unknown>;
+    const globalWordIndex = asNumber(source.globalWordIndex);
+    const matchScore = asNumber(source.matchScore);
+
+    if (globalWordIndex === undefined || matchScore === undefined) {
+      return [];
+    }
+
+    return [
+      {
+        globalWordIndex,
+        expectedWord: asString(source.expectedWord) ?? "",
+        spokenWord: asString(source.spokenWord) ?? "",
+        matchScore,
+        isCorrect: source.isCorrect === true,
+      },
+    ];
+  });
+}
+
 function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage {
   if (typeof eventData !== "string") {
     return { highlight: null, transcript: "" };
@@ -62,42 +72,38 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
 
   try {
     const payload = JSON.parse(eventData) as Record<string, unknown>;
-    const source =
-      (payload.highlight as Record<string, unknown> | undefined) ?? payload;
+    
+    if (payload.type === "highlight") {
+      const wordResults = parseWordResults(payload.wordResults);
 
-    return {
-      highlight: {
-        wordIndex:
-          asNumber(source.wordIndex) ??
-          asNumber(source.currentWordIndex) ??
-          asNumber(source.current_word_index) ??
-          asNumber(source.index),
-        lineIndex: asNumber(source.lineIndex) ?? asNumber(source.line_index),
-        startOffset:
-          asNumber(source.startOffset) ??
-          asNumber(source.start_offset) ??
-          asNumber(source.start),
-        endOffset:
-          asNumber(source.endOffset) ??
-          asNumber(source.end_offset) ??
-          asNumber(source.end),
-        text:
-          asString(source.text) ??
-          asString(source.word) ??
-          asString(source.currentWord) ??
-          asString(source.current_word) ??
-          asString(payload.transcript),
-      },
-      transcript:
-        asString(payload.transcript) ??
-        asString(payload.text) ??
-        asString(payload.partial) ??
-        "",
-    };
+      return {
+        highlight: {
+          wordIndex: asNumber(payload.currentGlobalWordIndex),
+          text: asString(payload.matchedWord),
+          isCorrect: wordResults[wordResults.length - 1]?.isCorrect ?? true,
+          wordResults,
+        },
+        transcript: asString(payload.transcript) ?? "",
+      };
+    }
+
+    if (
+      payload.type === "sttError" ||
+      payload.type === "sttDisabled" ||
+      payload.type === "restartRequired"
+    ) {
+      return {
+        highlight: null,
+        transcript: "",
+        error: asString(payload.message) ?? "STT 서버 오류가 발생했습니다.",
+      };
+    }
+
+    return { highlight: null, transcript: "" };
   } catch {
     return {
-      highlight: { text: eventData },
-      transcript: eventData,
+      highlight: null,
+      transcript: typeof eventData === "string" ? eventData : "",
     };
   }
 }
@@ -106,6 +112,8 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const [status, setStatus] = useState<RealtimeStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<RealtimeHighlight | null>(null);
+  const [lastReadIndex, setLastReadIndex] = useState<number>(-1);
+  const [wordFeedbackByIndex, setWordFeedbackByIndex] = useState<Record<number, WordRealtimeFeedback>>({});
   const [transcript, setTranscript] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -127,57 +135,139 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     socketRef.current = null;
     setStatus("idle");
     setHighlight(null);
+    setLastReadIndex(-1);
+    setWordFeedbackByIndex({});
   }, []);
 
   const connect = useCallback(
-    (practiceId: number, script: string) => {
-      disconnect();
+    (wsUrl: string, scriptWords: WordRes[]) => {
+      return new Promise<void>((resolve, reject) => {
+        disconnect();
 
-      const wsUrl = getRealtimeWsUrl(practiceId);
-      if (!wsUrl) {
-        setStatus("error");
-        setErrorMessage("실시간 분석 서버 주소가 설정되지 않았습니다.");
-        return;
-      }
-
-      setStatus("connecting");
-      setErrorMessage(null);
-      setHighlight(null);
-      setTranscript("");
-
-      const socket = new WebSocket(wsUrl);
-      socket.binaryType = "arraybuffer";
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        setStatus("connected");
-        socket.send(JSON.stringify({ type: "start", practiceId, script }));
-      };
-
-      socket.onmessage = (event) => {
-        const message = parseRealtimeMessage(event.data);
-        setTranscript(message.transcript);
-        setHighlight(message.highlight);
-      };
-
-      socket.onerror = () => {
-        setStatus("error");
-        setErrorMessage("실시간 분석 서버와 연결하지 못했습니다.");
-      };
-
-      socket.onclose = () => {
-        if (socketRef.current === socket) {
-          socketRef.current = null;
-          setStatus((prev) => (prev === "error" ? "error" : "idle"));
+        if (!wsUrl) {
+          setStatus("error");
+          setErrorMessage("실시간 분석 서버 주소가 없습니다.");
+          reject(new Error("No WebSocket URL"));
+          return;
         }
-      };
+
+        setStatus("connecting");
+        setErrorMessage(null);
+        setHighlight(null);
+        setLastReadIndex(-1);
+        setWordFeedbackByIndex({});
+        setTranscript("");
+
+        let isReadyReceived = false;
+        const socket = new WebSocket(wsUrl);
+        socket.binaryType = "arraybuffer";
+        socketRef.current = socket;
+
+        const timeoutId = setTimeout(() => {
+          if (!isReadyReceived) {
+            socket.close();
+            const err = "분석 서버 연결 준비 시간이 초과되었습니다.";
+            setStatus("error");
+            setErrorMessage(err);
+            reject(new Error(err));
+          }
+        }, 5000);
+
+        socket.onopen = () => {
+          socket.send(
+            JSON.stringify({
+              type: "init",
+              scriptWords: scriptWords,
+              audioEncoding: "LINEAR16",
+              sampleRateHertz: 16000,
+            }),
+          );
+        };
+
+        socket.onmessage = (event) => {
+          if (typeof event.data === "string") {
+            try {
+              const payload = JSON.parse(event.data);
+              
+              if (payload.type === "ready" || payload.type === "connected") {
+                isReadyReceived = true;
+                clearTimeout(timeoutId);
+                setStatus("connected");
+                resolve();
+                return;
+              }
+              
+              if (
+                payload.type === "sttError" ||
+                payload.type === "sttDisabled" ||
+                payload.type === "restartRequired"
+              ) {
+                if (!isReadyReceived) {
+                  clearTimeout(timeoutId);
+                  reject(new Error(payload.message || "STT 설정에 실패했습니다."));
+                }
+                setStatus("error");
+                setErrorMessage(payload.message || "STT 서버 오류");
+                socket.close();
+                return;
+              }
+            } catch {
+              // JSON이 아니면 아래 일반 메시지 파서로 처리합니다.
+            }
+          }
+
+          const message = parseRealtimeMessage(event.data);
+
+          if (message.error) {
+            setStatus("error");
+            setErrorMessage(message.error);
+            return;
+          }
+
+          if (message.transcript) setTranscript(message.transcript);
+          if (message.highlight && message.highlight.wordIndex !== undefined) {
+            setHighlight(message.highlight);
+            setLastReadIndex((prev) =>
+              Math.max(prev, message.highlight!.wordIndex!),
+            );
+            if (message.highlight.wordResults?.length) {
+              setWordFeedbackByIndex((prev) => {
+                const next = { ...prev };
+                message.highlight!.wordResults!.forEach((wordResult) => {
+                  next[wordResult.globalWordIndex] = wordResult;
+                });
+                return next;
+              });
+            }
+          }
+        };
+
+        socket.onerror = () => {
+          if (!isReadyReceived) {
+            clearTimeout(timeoutId);
+            reject(new Error("WebSocket Connection Failed"));
+          }
+          setStatus("error");
+          setErrorMessage("실시간 분석 서버에 연결하지 못했습니다.");
+        };
+
+        socket.onclose = () => {
+          clearTimeout(timeoutId);
+          if (socketRef.current === socket) {
+            socketRef.current = null;
+            setStatus((prev) => (prev === "error" ? "error" : "idle"));
+          }
+        };
+      });
     },
     [disconnect],
   );
 
-  const sendAudioChunk = useCallback((chunk: Blob) => {
+  const sendAudioChunk = useCallback((chunk: ArrayBuffer) => {
     const socket = socketRef.current;
-    if (!socket || socket.readyState !== WS_READY_OPEN) return;
+    if (!socket || socket.readyState !== WS_READY_OPEN || chunk.byteLength === 0) {
+      return;
+    }
 
     socket.send(chunk);
   }, []);
@@ -188,6 +278,8 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     status,
     errorMessage,
     highlight,
+    lastReadIndex,
+    wordFeedbackByIndex,
     transcript,
     connect,
     sendAudioChunk,

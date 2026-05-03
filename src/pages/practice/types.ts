@@ -46,4 +46,19 @@ export type RealtimeHighlight = {
   startOffset?: number;
   endOffset?: number;
   text?: string;
+  isCorrect?: boolean;
+  wordResults?: WordRealtimeFeedback[];
+};
+
+export type WordRealtimeFeedback = {
+  globalWordIndex: number;
+  expectedWord: string;
+  spokenWord: string;
+  matchScore: number;
+  isCorrect: boolean;
+};
+
+export type WordFeedback = {
+  index: number;
+  isCorrect: boolean;
 };

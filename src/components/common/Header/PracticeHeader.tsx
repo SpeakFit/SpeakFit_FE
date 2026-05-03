@@ -1,5 +1,5 @@
 import "./PracticeHeader.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { clearAuthSession, getStoredUser } from "../../../api/authStorage";
 import speakfitLogo from "../../../assets/speakfit-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
@@ -20,14 +20,14 @@ export default function PracticeHeader() {
       <div className="practice-header__inner">
         
         {/* LEFT */}
-        <div className="practice-header__left">
+        <Link to="/" className="practice-header__left" style={{ textDecoration: 'none' }}>
           <img
             src={speakfitLogo}
             alt="Speakfit"
             className="practice-header__logo"
           />
           <span className="practice-header__brand">Speakfit</span>
-        </div>
+        </Link>
 
         {/* RIGHT */}
         <div className="practice-header__right">
