@@ -10,13 +10,25 @@ type RealtimeMessage = {
   isAnalysisComplete: boolean;
 };
 
+type RealtimeScriptWord = {
+  scriptWordId: number;
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  globalWordIndex: number;
+  sentenceWordIndex: number;
+  text: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+};
+
 type UsePracticeRealtimeResult = {
   status: RealtimeStatus;
   errorMessage: string | null;
   highlight: RealtimeHighlight | null;
   transcript: string;
   isAnalysisComplete: boolean;
-  connect: (practiceId: number, script: string) => void;
+  connect: (practiceId: number, scriptWords: RealtimeScriptWord[]) => void;
   sendAudioChunk: (chunk: Blob) => void;
   sendControl: (type: "pause" | "resume" | "stop") => void;
   disconnect: () => void;
@@ -36,8 +48,19 @@ function getRealtimeWsUrl(practiceId: number) {
   const token = getStoredAccessToken();
 
   url.protocol = url.protocol.replace(/^http/, "ws");
+  const basePath = url.pathname.replace(/\/$/, "");
 
-  url.searchParams.set("practiceId", String(practiceId));
+  if (/\/ws\/practice\/[^/]+$/.test(basePath)) {
+    url.pathname = basePath.replace(
+      /\/ws\/practice\/[^/]+$/,
+      `/ws/practice/${practiceId}`,
+    );
+  } else if (basePath.endsWith("/ws/practice")) {
+    url.pathname = `${basePath}/${practiceId}`;
+  } else {
+    url.pathname = `${basePath}/ws/practice/${practiceId}`.replace(/^\/\//, "/");
+  }
+
   if (token) url.searchParams.set("token", token);
 
   return url.toString();
@@ -155,7 +178,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   }, []);
 
   const connect = useCallback(
-    (practiceId: number, script: string) => {
+    (practiceId: number, scriptWords: RealtimeScriptWord[]) => {
       disconnect();
 
       const wsUrl = getRealtimeWsUrl(practiceId);
@@ -177,7 +200,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
 
       socket.onopen = () => {
         setStatus("connected");
-        socket.send(JSON.stringify({ type: "start", practiceId, script }));
+        socket.send(JSON.stringify({ type: "init", practiceId, scriptWords }));
       };
 
       socket.onmessage = (event) => {

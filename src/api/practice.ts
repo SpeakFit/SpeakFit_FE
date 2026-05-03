@@ -59,6 +59,52 @@ export type InputPracticeInfoResponse = {
   styleList: SpeechStyle[];
 };
 
+export type PracticeContentItem = {
+  index: number;
+  word: string;
+  hasBreak: boolean;
+  isEmphasis: boolean;
+};
+
+export type SelectPracticeStyleResponse = {
+  practiceId: number;
+  styleType: StyleType;
+  contentList: PracticeContentItem[];
+};
+
+export type StartPracticeSentence = {
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  originalText: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+  words: StartPracticeWord[];
+};
+
+export type StartPracticeWord = {
+  scriptWordId: number;
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  globalWordIndex: number;
+  sentenceWordIndex: number;
+  text: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+};
+
+export type StartPracticeResponse = {
+  practiceId: number;
+  title: string;
+  webSocketUrl?: string;
+  status: string;
+  contentList: PracticeContentItem[];
+  sentences: StartPracticeSentence[];
+  scriptWords: StartPracticeWord[];
+  createdAt?: string;
+};
+
 export type StopPracticeResponse = {
   practiceId: number;
   status: "ANALYZING" | "ANALYZED" | string;
@@ -66,16 +112,26 @@ export type StopPracticeResponse = {
 };
 
 export type PracticeAnalysisResult = {
-  avgWpm?: number;
-  avgPitch?: number;
-  avgIntensity?: number;
-  avgZcr?: number;
-  pauseRatio?: number;
-  wpmDiff?: number;
-  pitchDiff?: number;
-  intensityDiff?: number;
-  zcrDiff?: number;
-  pauseCount?: number;
+  wpm?: {
+    avg?: number;
+    diff?: number;
+  };
+  pitch?: {
+    avg?: number;
+    diff?: number;
+  };
+  intensity?: {
+    avg?: number;
+    diff?: number;
+  };
+  zcr?: {
+    avg?: number;
+    diff?: number;
+  };
+  pause?: {
+    ratio?: number;
+    count?: number;
+  };
 };
 
 export type PracticeAiAnalysisResult = {
@@ -102,22 +158,23 @@ export type PracticeIssueResponse = {
 
 export type PracticeSentenceResponse = {
   index: number;
-  text: string;
+  text?: string;
+  originalText?: string;
   startTime?: number;
   endTime?: number;
   status?: string;
 };
 
 export type PracticeReportResponse = {
-  id: number;
+  practiceId: number;
   audioUrl?: string;
   time?: number;
   status?: string;
   audienceType?: AudienceType;
   audienceUnderstanding?: AudienceUnderstanding;
   speechInformation?: SpeechInformation;
-  analysisResult?: PracticeAnalysisResult;
-  aiAnalysisResult?: PracticeAiAnalysisResult;
+  analysis?: PracticeAnalysisResult;
+  aiAnalysis?: PracticeAiAnalysisResult;
   practiceIssues?: PracticeIssueResponse[];
   sentences?: PracticeSentenceResponse[];
 };
@@ -169,7 +226,7 @@ export async function getSpeechStyles() {
 }
 
 export async function selectPracticeStyle(practiceId: number, styleId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<SelectPracticeStyleResponse>>(
     `/api/practices/${practiceId}/select-style`,
     { styleId },
   );
@@ -178,7 +235,7 @@ export async function selectPracticeStyle(practiceId: number, styleId: number) {
 }
 
 export async function startPractice(practiceId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<StartPracticeResponse>>(
     `/api/practices/${practiceId}`,
   );
 

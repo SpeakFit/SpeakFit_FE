@@ -1,11 +1,6 @@
 import { api } from "./http";
-
-type ApiResponse<T> = {
-  code?: string;
-  message?: string;
-  result?: T;
-  success: boolean;
-};
+import type { ApiResponse } from "./response";
+import { unwrapResponse } from "./response";
 
 export type AudienceAgeCode = "SENIOR" | "ADULT" | "YOUTH" | "CHILD";
 export type AudienceLevelCode = "LOW" | "MIDDLE" | "HIGH";
@@ -57,14 +52,6 @@ export type InputPracticeInfoRequest = {
   speechInformation: SpeechTypeCode;
   targetTime: number;
 };
-
-function unwrapResponse<T>(response: ApiResponse<T>, fallbackMessage: string) {
-  if (!response.success || !response.result) {
-    throw new Error(response.message || fallbackMessage);
-  }
-
-  return response.result;
-}
 
 export async function getScripts() {
   const { data } = await api.get<ApiResponse<ScriptResponse[]>>("/api/scripts");
