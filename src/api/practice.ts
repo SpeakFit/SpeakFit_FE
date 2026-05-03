@@ -65,7 +65,62 @@ export type StopPracticeResponse = {
   audioUrl: string;
 };
 
-export type PracticeReportResponse = Record<string, unknown>;
+export type PracticeAnalysisResult = {
+  avgWpm?: number;
+  avgPitch?: number;
+  avgIntensity?: number;
+  avgZcr?: number;
+  pauseRatio?: number;
+  wpmDiff?: number;
+  pitchDiff?: number;
+  intensityDiff?: number;
+  zcrDiff?: number;
+  pauseCount?: number;
+};
+
+export type PracticeAiAnalysisResult = {
+  aiSummary?: string;
+  wpmSummary?: string;
+  wpmFeedback?: string;
+  energySummary?: string;
+  energyFeedback?: string;
+  pauseFeedback?: string;
+  symbolFeedback?: string;
+  goalSimilarityScore?: number;
+  goalSummary?: string;
+  goalFeedback?: string;
+};
+
+export type PracticeIssueResponse = {
+  startIndex?: number;
+  endIndex?: number;
+  issueSummary?: string;
+  feedbackContent?: string;
+  wpm?: number;
+  intensity?: number;
+};
+
+export type PracticeSentenceResponse = {
+  index: number;
+  text: string;
+  startTime?: number;
+  endTime?: number;
+  status?: string;
+};
+
+export type PracticeReportResponse = {
+  id: number;
+  audioUrl?: string;
+  time?: number;
+  status?: string;
+  audienceType?: AudienceType;
+  audienceUnderstanding?: AudienceUnderstanding;
+  speechInformation?: SpeechInformation;
+  analysisResult?: PracticeAnalysisResult;
+  aiAnalysisResult?: PracticeAiAnalysisResult;
+  practiceIssues?: PracticeIssueResponse[];
+  sentences?: PracticeSentenceResponse[];
+};
 
 const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   "audio/mp4": "mp4",
