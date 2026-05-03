@@ -36,8 +36,19 @@ function getRealtimeWsUrl(practiceId: number) {
   const token = getStoredAccessToken();
 
   url.protocol = url.protocol.replace(/^http/, "ws");
+  const basePath = url.pathname.replace(/\/$/, "");
 
-  url.searchParams.set("practiceId", String(practiceId));
+  if (/\/ws\/practice\/[^/]+$/.test(basePath)) {
+    url.pathname = basePath.replace(
+      /\/ws\/practice\/[^/]+$/,
+      `/ws/practice/${practiceId}`,
+    );
+  } else if (basePath.endsWith("/ws/practice")) {
+    url.pathname = `${basePath}/${practiceId}`;
+  } else {
+    url.pathname = `${basePath}/ws/practice/${practiceId}`.replace(/^\/\//, "/");
+  }
+
   if (token) url.searchParams.set("token", token);
 
   return url.toString();
