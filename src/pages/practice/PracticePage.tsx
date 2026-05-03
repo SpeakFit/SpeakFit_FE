@@ -288,44 +288,47 @@ function getSentenceExcerpt(
     sentences.find((item) => item.index === startIndex + 1) ??
     sentences.find((item) => item.index === startIndex - 1);
 
-  return sentence?.text ?? "";
+  return sentence?.text ?? sentence?.originalText ?? "";
 }
 
 function mapPracticeReport(
   report: PracticeReportResponse,
   fallbackScript: string,
 ): PracticeFeedbackReport {
-  const analysis = report.analysisResult;
-  const aiAnalysis = report.aiAnalysisResult;
+  const analysis = report.analysis;
+  const aiAnalysis = report.aiAnalysis;
   const sentences = getSortedSentences(report.sentences);
-  const scriptFromSentences = sentences.map((sentence) => sentence.text).join("\n");
+  const scriptFromSentences = sentences
+    .map((sentence) => sentence.text ?? sentence.originalText ?? "")
+    .filter(Boolean)
+    .join("\n");
   const metrics: FeedbackMetric[] = [
     {
       ...getFallbackMetric(0),
       value:
         aiAnalysis?.wpmSummary ??
-        formatDiff(analysis?.wpmDiff, "wpm") ??
+        formatDiff(analysis?.wpm?.diff, "wpm") ??
         "분석 완료",
-      badge: formatNumber(analysis?.avgWpm, "wpm", 0) ?? getFallbackMetric(0).badge,
+      badge: formatNumber(analysis?.wpm?.avg, "wpm", 0) ?? getFallbackMetric(0).badge,
     },
     {
       ...getFallbackMetric(1),
       value:
         aiAnalysis?.energySummary ??
-        formatDiff(analysis?.intensityDiff, "dB") ??
+        formatDiff(analysis?.intensity?.diff, "dB") ??
         "분석 완료",
       badge:
-        formatNumber(analysis?.avgIntensity, "dB") ?? getFallbackMetric(1).badge,
+        formatNumber(analysis?.intensity?.avg, "dB") ?? getFallbackMetric(1).badge,
     },
     {
       ...getFallbackMetric(2),
       value:
-        analysis?.pauseCount !== undefined
-          ? `${analysis.pauseCount}회`
+        analysis?.pause?.count !== undefined
+          ? `${analysis.pause.count}회`
           : "분석 완료",
       badge:
         formatNumber(
-          analysis?.pauseRatio === undefined ? undefined : analysis.pauseRatio * 100,
+          analysis?.pause?.ratio === undefined ? undefined : analysis.pause.ratio * 100,
           "%",
         ) ?? getFallbackMetric(2).badge,
     },
@@ -336,8 +339,8 @@ function mapPracticeReport(
     },
     {
       ...getFallbackMetric(4),
-      value: formatDiff(analysis?.zcrDiff, "") ?? "분석 완료",
-      badge: formatNumber(analysis?.avgZcr, " ZCR", 3) ?? getFallbackMetric(4).badge,
+      value: formatDiff(analysis?.zcr?.diff, "") ?? "분석 완료",
+      badge: formatNumber(analysis?.zcr?.avg, " ZCR", 3) ?? getFallbackMetric(4).badge,
     },
   ];
 
