@@ -18,6 +18,7 @@ import {
   startPractice as requestStartPractice,
   stopPractice,
   type PracticeReportResponse,
+  type PracticeSentenceResponse,
   type SpeechStyle,
 } from "../../api/practice";
 import { getScript } from "../../api/scripts";
@@ -71,7 +72,7 @@ const getStoredPracticeRouteState = () => {
   }
 };
 
-const DEFAULT_FEEDBACK_METRICS: FeedbackMetric[] = [
+const DEFAULT_FEEDBACK_METRICS: [FeedbackMetric, ...FeedbackMetric[]] = [
   {
     id: "speech-rate",
     label: "발화 속도",
@@ -207,43 +208,34 @@ function mapSpeechType(value: IntroFormState["speechType"]) {
   }
 }
 
-function getRecordValue(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = source[key];
-    if (value !== undefined && value !== null && value !== "") return value;
+function getFallbackMetric(index: number) {
+  return DEFAULT_FEEDBACK_METRICS[index] ?? DEFAULT_FEEDBACK_METRICS[0];
+}
+
+function formatNumber(value: number | undefined, suffix: string, fractionDigits = 1) {
+  if (value === undefined || !Number.isFinite(value)) return undefined;
+
+  return `${Number(value.toFixed(fractionDigits))}${suffix}`;
+}
+
+function formatDiff(value: number | undefined, suffix: string) {
+  if (value === undefined || !Number.isFinite(value)) return undefined;
+
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${Number(value.toFixed(1))}${suffix}`;
+}
+
+function formatGoalPercent(value: number | undefined) {
+  if (value === undefined || !Number.isFinite(value)) {
+    return DEFAULT_FEEDBACK_REPORT.goalPercent;
   }
 
-  return undefined;
+  const percent = value <= 1 ? value * 100 : value;
+  return Math.min(100, Math.max(0, Math.round(percent)));
 }
 
-function getStringValue(source: Record<string, unknown>, keys: string[]) {
-  const value = getRecordValue(source, keys);
-  return typeof value === "string" ? value : undefined;
-}
-
-function getNumberValue(source: Record<string, unknown>, keys: string[]) {
-  const value = getRecordValue(source, keys);
-
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  return undefined;
-}
-
-function getRecordArray(source: Record<string, unknown>, keys: string[]) {
-  const value = getRecordValue(source, keys);
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => {
-        return typeof item === "object" && item !== null;
-      })
-    : [];
-}
-
-function mapMetricId(value: unknown, fallbackIndex: number): FeedbackMetricId {
-  const normalized = String(value ?? "").toLowerCase();
+function mapMetricId(value: string | undefined, fallbackIndex: number): FeedbackMetricId {
+  const normalized = value?.toLowerCase() ?? "";
 
   if (normalized.includes("voice") || normalized.includes("energy")) {
     return "voice-energy";
@@ -258,101 +250,124 @@ function mapMetricId(value: unknown, fallbackIndex: number): FeedbackMetricId {
   if (normalized.includes("wpm") || normalized.includes("rate")) {
     return "speech-rate";
   }
+  if (
+    normalized.includes("속도") ||
+    normalized.includes("빠르") ||
+    normalized.includes("느리")
+  ) {
+    return "speech-rate";
+  }
+  if (
+    normalized.includes("에너지") ||
+    normalized.includes("음량") ||
+    normalized.includes("강도")
+  ) {
+    return "voice-energy";
+  }
+  if (normalized.includes("멈춤") || normalized.includes("쉼")) return "pause";
+  if (normalized.includes("강조") || normalized.includes("기호")) {
+    return "emphasis";
+  }
+  if (normalized.includes("명료") || normalized.includes("발음")) return "clarity";
 
-  return DEFAULT_FEEDBACK_METRICS[fallbackIndex]?.id ?? "speech-rate";
+  return getFallbackMetric(fallbackIndex).id;
+}
+
+function getSortedSentences(sentences: PracticeSentenceResponse[] = []) {
+  return [...sentences].sort((a, b) => a.index - b.index);
+}
+
+function getSentenceExcerpt(
+  sentences: PracticeSentenceResponse[],
+  startIndex: number | undefined,
+) {
+  if (startIndex === undefined || sentences.length === 0) return "";
+
+  const sentence =
+    sentences.find((item) => item.index === startIndex) ??
+    sentences.find((item) => item.index === startIndex + 1) ??
+    sentences.find((item) => item.index === startIndex - 1);
+
+  return sentence?.text ?? "";
 }
 
 function mapPracticeReport(
   report: PracticeReportResponse,
   fallbackScript: string,
 ): PracticeFeedbackReport {
-  const metricRows = getRecordArray(report, [
-    "metrics",
-    "metricList",
-    "analysisMetrics",
-    "analysisResults",
-  ]);
-  const issueRows = getRecordArray(report, [
-    "issues",
-    "feedbacks",
-    "feedbackList",
-    "sectionFeedbacks",
-    "sections",
-  ]);
-
-  const metrics =
-    metricRows.length > 0
-      ? metricRows.map((metric, index): FeedbackMetric => {
-          const fallback = DEFAULT_FEEDBACK_METRICS[index] ?? DEFAULT_FEEDBACK_METRICS[0];
-          const id = mapMetricId(
-            getRecordValue(metric, ["id", "metricId", "type", "metricType", "name"]),
-            index,
-          );
-
-          return {
-            id,
-            label:
-              getStringValue(metric, ["label", "name", "title", "metricName"]) ??
-              fallback.label,
-            value:
-              getStringValue(metric, ["value", "status", "level", "result"]) ??
-              fallback.value,
-            badge:
-              getStringValue(metric, ["badge", "detail", "scoreText", "displayValue"]) ??
-              fallback.badge,
-            initial: fallback.initial,
-            tone: fallback.tone,
-          };
-        })
-      : DEFAULT_FEEDBACK_METRICS;
+  const analysis = report.analysisResult;
+  const aiAnalysis = report.aiAnalysisResult;
+  const sentences = getSortedSentences(report.sentences);
+  const scriptFromSentences = sentences.map((sentence) => sentence.text).join("\n");
+  const metrics: FeedbackMetric[] = [
+    {
+      ...getFallbackMetric(0),
+      value:
+        aiAnalysis?.wpmSummary ??
+        formatDiff(analysis?.wpmDiff, "wpm") ??
+        "분석 완료",
+      badge: formatNumber(analysis?.avgWpm, "wpm", 0) ?? getFallbackMetric(0).badge,
+    },
+    {
+      ...getFallbackMetric(1),
+      value:
+        aiAnalysis?.energySummary ??
+        formatDiff(analysis?.intensityDiff, "dB") ??
+        "분석 완료",
+      badge:
+        formatNumber(analysis?.avgIntensity, "dB") ?? getFallbackMetric(1).badge,
+    },
+    {
+      ...getFallbackMetric(2),
+      value:
+        analysis?.pauseCount !== undefined
+          ? `${analysis.pauseCount}회`
+          : "분석 완료",
+      badge:
+        formatNumber(
+          analysis?.pauseRatio === undefined ? undefined : analysis.pauseRatio * 100,
+          "%",
+        ) ?? getFallbackMetric(2).badge,
+    },
+    {
+      ...getFallbackMetric(3),
+      value: aiAnalysis?.goalSummary ?? "분석 완료",
+      badge: "강조 피드백",
+    },
+    {
+      ...getFallbackMetric(4),
+      value: formatDiff(analysis?.zcrDiff, "") ?? "분석 완료",
+      badge: formatNumber(analysis?.avgZcr, " ZCR", 3) ?? getFallbackMetric(4).badge,
+    },
+  ];
 
   const issues =
-    issueRows.length > 0
-      ? issueRows.map((issue, index): FeedbackIssue => {
+    report.practiceIssues && report.practiceIssues.length > 0
+      ? report.practiceIssues.map((issue, index): FeedbackIssue => {
+          const issueText = `${issue.issueSummary ?? ""} ${
+            issue.feedbackContent ?? ""
+          }`;
+
           return {
-            metricId: mapMetricId(
-              getRecordValue(issue, ["metricId", "type", "metricType", "category"]),
-              index,
-            ),
-            excerpt:
-              getStringValue(issue, [
-                "excerpt",
-                "targetText",
-                "text",
-                "sentence",
-                "scriptSegment",
-              ]) ?? "",
-            title:
-              getStringValue(issue, ["title", "summary", "feedbackTitle"]) ??
-              "상세 피드백",
-            description:
-              getStringValue(issue, [
-                "description",
-                "content",
-                "feedback",
-                "message",
-                "comment",
-              ]) ?? "분석 결과를 확인해보세요.",
+            metricId: mapMetricId(issueText, index),
+            excerpt: getSentenceExcerpt(sentences, issue.startIndex),
+            title: issue.issueSummary ?? "상세 피드백",
+            description: issue.feedbackContent ?? "분석 결과를 확인해보세요.",
           };
         })
       : DEFAULT_FEEDBACK_ISSUES;
 
   return {
-    script:
-      getStringValue(report, ["script", "scriptContent", "transcript", "content"]) ??
-      fallbackScript,
-    goalPercent:
-      getNumberValue(report, [
-        "goalPercent",
-        "targetMatchRate",
-        "targetRate",
-        "score",
-        "totalScore",
-      ]) ?? DEFAULT_FEEDBACK_REPORT.goalPercent,
-    summary:
-      getStringValue(report, ["summary", "overallFeedback", "totalFeedback", "comment"]) ??
-      DEFAULT_FEEDBACK_REPORT.summary,
-    tip: getStringValue(report, ["tip", "recommendation", "advice"]) ?? DEFAULT_FEEDBACK_REPORT.tip,
+    script: scriptFromSentences || fallbackScript,
+    goalPercent: formatGoalPercent(aiAnalysis?.goalSimilarityScore),
+    summary: aiAnalysis?.aiSummary ?? DEFAULT_FEEDBACK_REPORT.summary,
+    tip:
+      aiAnalysis?.goalFeedback ??
+      aiAnalysis?.wpmFeedback ??
+      aiAnalysis?.energyFeedback ??
+      aiAnalysis?.pauseFeedback ??
+      aiAnalysis?.symbolFeedback ??
+      DEFAULT_FEEDBACK_REPORT.tip,
     metrics,
     issues,
   };
