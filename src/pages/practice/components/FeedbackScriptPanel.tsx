@@ -1,89 +1,99 @@
-import type { FeedbackIssue, FeedbackMetricId } from "../types";
+import { useState } from "react";
+import type { FeedbackIssue } from "../types";
 
 type FeedbackScriptPanelProps = {
   title: string;
   script: string;
-  activeMetricId: FeedbackMetricId | null;
   issues: FeedbackIssue[];
 };
 
-type RenderedLine = {
-  before: string;
-  highlight: string;
-  after: string;
-  issue: FeedbackIssue | null;
+type TooltipState = {
+  issues: FeedbackIssue[];
+  x: number;
+  y: number;
 };
 
-function getLineHighlight(
-  line: string,
-  activeMetricId: FeedbackMetricId | null,
-  issues: FeedbackIssue[],
-): RenderedLine {
-  if (!activeMetricId) {
-    return { before: line, highlight: "", after: "", issue: null };
-  }
+function getLineIssues(line: string, issues: FeedbackIssue[]) {
+  return issues.filter((item) => item.excerpt && line.includes(item.excerpt));
+}
 
-  const activeIssues = issues.filter((issue) => issue.metricId === activeMetricId);
-  const issue = activeIssues.find((item) => line.includes(item.excerpt));
-
-  if (!issue) {
-    return { before: line, highlight: "", after: "", issue: null };
-  }
-
-  const startIndex = line.indexOf(issue.excerpt);
-
+function getTooltipPosition(event: React.MouseEvent<HTMLElement>) {
   return {
-    before: line.slice(0, startIndex),
-    highlight: issue.excerpt,
-    after: line.slice(startIndex + issue.excerpt.length),
-    issue,
+    x: Math.min(event.clientX + 18, window.innerWidth - 440),
+    y: Math.min(event.clientY + 18, window.innerHeight - 220),
   };
 }
 
 export default function FeedbackScriptPanel({
   title,
   script,
-  activeMetricId,
   issues,
 }: FeedbackScriptPanelProps) {
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const scriptLines = script
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const showTooltip = (
+    event: React.MouseEvent<HTMLElement>,
+    nextIssues: FeedbackIssue[],
+  ) => {
+    setTooltip({
+      issues: nextIssues,
+      ...getTooltipPosition(event),
+    });
+  };
+
   return (
     <section className="feedback-script-panel">
       <div className="feedback-script-panel__header">
         <span>{title}</span>
         <span className="feedback-script-panel__hint">
-          우측 카드를 클릭하여 상세 피드백을 확인하세요
+          노란색 문장에 커서를 올려 상세 피드백을 확인하세요
         </span>
       </div>
 
       <div className="feedback-script-panel__body">
-        {script.split("\n").map((line, index) => {
-          const renderedLine = getLineHighlight(line, activeMetricId, issues);
+        {scriptLines.map((line, index) => {
+          const lineIssues = getLineIssues(line, issues);
 
           return (
             <p key={`${line}-${index}`} className="feedback-script-panel__paragraph">
-              {line ? (
-                <>
-                  {renderedLine.before}
-                  {renderedLine.highlight && renderedLine.issue && (
-                    <span className="feedback-script-panel__highlight-anchor">
-                      <mark className="feedback-script-panel__highlight">
-                        {renderedLine.highlight}
-                      </mark>
-                      <span className="feedback-script-popover" role="status">
-                        <strong>{renderedLine.issue.title}</strong>
-                        <span>{renderedLine.issue.description}</span>
-                      </span>
-                    </span>
-                  )}
-                  {renderedLine.after}
-                </>
+              {line && lineIssues.length > 0 ? (
+                <span
+                  className="feedback-script-panel__highlight-anchor"
+                  onMouseEnter={(event) => showTooltip(event, lineIssues)}
+                  onMouseMove={(event) => showTooltip(event, lineIssues)}
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  <mark className="feedback-script-panel__highlight">{line}</mark>
+                </span>
               ) : (
-                "\u00A0"
+                line
               )}
             </p>
           );
         })}
       </div>
+
+      {tooltip && (
+        <div
+          className="feedback-script-popover is-visible"
+          role="status"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          {tooltip.issues.map((issue, issueIndex) => (
+            <span
+              key={`${issue.metricId}-${issue.title}-${issueIndex}`}
+              className="feedback-script-popover__item"
+            >
+              <strong>{issue.title}</strong>
+              <span>{issue.description}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

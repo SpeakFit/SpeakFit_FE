@@ -18,6 +18,7 @@ import {
   startPractice as requestStartPractice,
   stopPractice,
   type PracticeContentItem,
+  type PracticeIssueResponse,
   type StartPracticeSentence,
   type PracticeReportResponse,
   type PracticeSentenceResponse,
@@ -44,6 +45,8 @@ const initialForm: IntroFormState = {
 
 const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
 const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
+const REPORT_POLL_INTERVAL_MS = 2000;
+const REPORT_POLL_TIMEOUT_MS = 90000;
 
 const SCRIPT_TEXT = `안녕하세요. 저는 발표 연습을 돕는 서비스 SpeakFit을 개발하고 있는 팀입니다.
 오늘은 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.
@@ -74,6 +77,7 @@ const DEFAULT_FEEDBACK_METRICS: [FeedbackMetric, ...FeedbackMetric[]] = [
     label: "발화 속도",
     value: "조금 느림",
     badge: "90wpm",
+    feedback: "핵심 문장 앞에서는 속도를 낮추고 문장 끝에서 짧게 쉬면 흐름이 자연스러워집니다.",
     initial: "S",
     tone: "slate",
   },
@@ -82,6 +86,7 @@ const DEFAULT_FEEDBACK_METRICS: [FeedbackMetric, ...FeedbackMetric[]] = [
     label: "음성 에너지",
     value: "낮음",
     badge: "에너지 부족",
+    feedback: "문장 끝까지 음성 에너지를 유지하면 청중이 발표 흐름을 더 쉽게 따라올 수 있습니다.",
     initial: "E",
     tone: "amber",
   },
@@ -90,14 +95,16 @@ const DEFAULT_FEEDBACK_METRICS: [FeedbackMetric, ...FeedbackMetric[]] = [
     label: "멈춤 구간",
     value: "주의",
     badge: "2초+ 멈춤",
+    feedback: "문장 중간보다 문장 끝에서 짧게 쉬면 더 자연스럽게 들립니다.",
     initial: "P",
     tone: "amber",
   },
   {
     id: "emphasis",
-    label: "강조 표현",
+    label: "기호 준수",
     value: "낮음",
     badge: "강조 부족",
+    feedback: "중요한 단어는 음량이나 억양을 살짝 올려 말하면 메시지가 더 분명해집니다.",
     initial: "M",
     tone: "violet",
   },
@@ -106,6 +113,7 @@ const DEFAULT_FEEDBACK_METRICS: [FeedbackMetric, ...FeedbackMetric[]] = [
     label: "발음 명료도",
     value: "불명확",
     badge: "ZCR 0.08",
+    feedback: "긴 문장은 단어 사이를 조금 더 분명하게 띄어 말하면 전달력이 좋아집니다.",
     initial: "M",
     tone: "green",
   },
@@ -214,11 +222,18 @@ function formatNumber(value: number | undefined, suffix: string, fractionDigits 
   return `${Number(value.toFixed(fractionDigits))}${suffix}`;
 }
 
-function formatDiff(value: number | undefined, suffix: string) {
-  if (value === undefined || !Number.isFinite(value)) return undefined;
+function compactText(value: string | undefined, maxLength: number) {
+  if (!value) return undefined;
 
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${Number(value.toFixed(1))}${suffix}`;
+  const text = value.replace(/\s+/g, " ").trim();
+
+  if (text.length <= maxLength) return text;
+
+  return `${text.slice(0, maxLength).trim()}...`;
+}
+
+function normalizeScriptLine(value: string | undefined) {
+  return value?.replace(/\s+/g, " ").trim() ?? "";
 }
 
 function formatGoalPercent(value: number | undefined) {
@@ -228,6 +243,37 @@ function formatGoalPercent(value: number | undefined) {
 
   const percent = value <= 1 ? value * 100 : value;
   return Math.min(100, Math.max(0, Math.round(percent)));
+}
+
+function normalizePracticeStatus(status: string | undefined) {
+  return status?.trim().toUpperCase() ?? "";
+}
+
+function getReportPollingMessage(report: PracticeReportResponse) {
+  return report.message ?? "발표 음성을 분석하고 있습니다.";
+}
+
+function getDiffLevel(
+  diff: number | undefined,
+  negativeLabel: string,
+  positiveLabel: string,
+) {
+  if (diff === undefined || !Number.isFinite(diff)) return "분석 완료";
+
+  const absDiff = Math.abs(diff);
+
+  if (absDiff < 5) return "적정";
+  if (absDiff < 15) return diff > 0 ? `조금 ${positiveLabel}` : `조금 ${negativeLabel}`;
+
+  return diff > 0 ? positiveLabel : negativeLabel;
+}
+
+function getPauseLevel(count: number | undefined, ratio: number | undefined) {
+  if (count === undefined && ratio === undefined) return "분석 완료";
+  if ((count ?? 0) === 0 && (ratio ?? 0) < 0.08) return "적정";
+  if ((count ?? 0) <= 2 && (ratio ?? 0) < 0.16) return "조금 많음";
+
+  return "많음";
 }
 
 function mapMetricId(value: string | undefined, fallbackIndex: number): FeedbackMetricId {
@@ -269,20 +315,66 @@ function mapMetricId(value: string | undefined, fallbackIndex: number): Feedback
   return getFallbackMetric(fallbackIndex).id;
 }
 
+function mapIssueMetricId(
+  issue: PracticeIssueResponse,
+  fallbackIndex: number,
+): FeedbackMetricId {
+  const issueType = issue.issueType?.toUpperCase() ?? "";
+
+  if (issueType.includes("FAST") || issueType.includes("SLOW")) {
+    return "speech-rate";
+  }
+  if (
+    issueType.includes("PAUSE") ||
+    issueType.includes("SKIPPED") ||
+    issueType.includes("CONFIDENCE")
+  ) {
+    return "pause";
+  }
+  if (
+    issueType.includes("VOLUME") ||
+    issueType.includes("PITCH") ||
+    issueType.includes("INTENSITY")
+  ) {
+    return "voice-energy";
+  }
+  if (issueType.includes("SCORE")) {
+    return "clarity";
+  }
+
+  const issueText = `${issue.issueSummary ?? ""} ${issue.feedbackContent ?? ""} ${
+    issue.reason ?? ""
+  }`;
+
+  return mapMetricId(issueText, fallbackIndex);
+}
+
 function getSortedSentences(sentences: PracticeSentenceResponse[] = []) {
   return [...sentences].sort((a, b) => a.index - b.index);
 }
 
 function getSentenceExcerpt(
   sentences: PracticeSentenceResponse[],
-  startIndex: number | undefined,
+  issue: PracticeIssueResponse,
 ) {
-  if (startIndex === undefined || sentences.length === 0) return "";
+  if (issue.sentenceText) return issue.sentenceText;
+
+  if (issue.scriptSentenceId !== undefined) {
+    const sentence = sentences.find(
+      (item) => item.scriptSentenceId === issue.scriptSentenceId,
+    );
+
+    if (sentence) return sentence.text ?? sentence.originalText ?? "";
+  }
+
+  const sentenceIndex = issue.sentenceIndex ?? issue.startIndex;
+
+  if (sentenceIndex === undefined || sentences.length === 0) return "";
 
   const sentence =
-    sentences.find((item) => item.index === startIndex) ??
-    sentences.find((item) => item.index === startIndex + 1) ??
-    sentences.find((item) => item.index === startIndex - 1);
+    sentences.find((item) => item.index === sentenceIndex) ??
+    sentences.find((item) => item.index === sentenceIndex + 1) ??
+    sentences.find((item) => item.index === sentenceIndex - 1);
 
   return sentence?.text ?? sentence?.originalText ?? "";
 }
@@ -295,71 +387,69 @@ function mapPracticeReport(
   const aiAnalysis = report.aiAnalysis;
   const sentences = getSortedSentences(report.sentences);
   const scriptFromSentences = sentences
-    .map((sentence) => sentence.text ?? sentence.originalText ?? "")
+    .map((sentence) => normalizeScriptLine(sentence.text ?? sentence.originalText))
     .filter(Boolean)
     .join("\n");
   const metrics: FeedbackMetric[] = [
     {
       ...getFallbackMetric(0),
       value:
-        aiAnalysis?.wpmSummary ??
-        formatDiff(analysis?.wpm?.diff, "wpm") ??
-        "분석 완료",
+        compactText(aiAnalysis?.wpmSummary, 12) ??
+        getDiffLevel(analysis?.wpm?.diff, "느림", "빠름"),
       badge: formatNumber(analysis?.wpm?.avg, "wpm", 0) ?? getFallbackMetric(0).badge,
+      feedback: compactText(aiAnalysis?.wpmFeedback, 55),
     },
     {
       ...getFallbackMetric(1),
       value:
-        aiAnalysis?.energySummary ??
-        formatDiff(analysis?.intensity?.diff, "dB") ??
-        "분석 완료",
+        compactText(aiAnalysis?.energySummary, 12) ??
+        getDiffLevel(analysis?.intensity?.diff, "낮음", "높음"),
       badge:
         formatNumber(analysis?.intensity?.avg, "dB") ?? getFallbackMetric(1).badge,
+      feedback: compactText(aiAnalysis?.energyFeedback, 55),
     },
     {
       ...getFallbackMetric(2),
-      value:
-        analysis?.pause?.count !== undefined
-          ? `${analysis.pause.count}회`
-          : "분석 완료",
+      value: getPauseLevel(analysis?.pause?.count, analysis?.pause?.ratio),
       badge:
         formatNumber(
           analysis?.pause?.ratio === undefined ? undefined : analysis.pause.ratio * 100,
           "%",
         ) ?? getFallbackMetric(2).badge,
+      feedback: compactText(aiAnalysis?.pauseFeedback, 55),
     },
     {
       ...getFallbackMetric(3),
-      value: aiAnalysis?.goalSummary ?? "분석 완료",
-      badge: "강조 피드백",
+      value: compactText(aiAnalysis?.symbolFeedback, 12) ?? "확인 필요",
+      badge: "낭독 기호",
+      feedback: undefined,
     },
     {
       ...getFallbackMetric(4),
-      value: formatDiff(analysis?.zcr?.diff, "") ?? "분석 완료",
-      badge: formatNumber(analysis?.zcr?.avg, " ZCR", 3) ?? getFallbackMetric(4).badge,
+      value: compactText(aiAnalysis?.goalSummary, 12) ?? "목표 확인",
+      badge: `${formatGoalPercent(aiAnalysis?.goalSimilarityScore)}%`,
+      feedback: compactText(aiAnalysis?.goalFeedback, 55),
     },
   ];
 
   const issues =
     report.practiceIssues && report.practiceIssues.length > 0
-      ? report.practiceIssues.map((issue, index): FeedbackIssue => {
-          const issueText = `${issue.issueSummary ?? ""} ${
-            issue.feedbackContent ?? ""
-          }`;
-
-          return {
-            metricId: mapMetricId(issueText, index),
-            excerpt: getSentenceExcerpt(sentences, issue.startIndex),
-            title: issue.issueSummary ?? "상세 피드백",
-            description: issue.feedbackContent ?? "분석 결과를 확인해보세요.",
-          };
-        })
+      ? report.practiceIssues.map((issue, index): FeedbackIssue => ({
+          metricId: mapIssueMetricId(issue, index),
+          excerpt: getSentenceExcerpt(sentences, issue),
+          title: issue.issueSummary ?? "상세 피드백",
+          description:
+            issue.feedbackContent ??
+            issue.reason ??
+            "분석 결과를 확인해보세요.",
+        }))
       : DEFAULT_FEEDBACK_ISSUES;
 
   return {
     script: scriptFromSentences || fallbackScript,
     goalPercent: formatGoalPercent(aiAnalysis?.goalSimilarityScore),
-    summary: aiAnalysis?.aiSummary ?? DEFAULT_FEEDBACK_REPORT.summary,
+    summary:
+      compactText(aiAnalysis?.aiSummary, 70) ?? DEFAULT_FEEDBACK_REPORT.summary,
     tip:
       aiAnalysis?.goalFeedback ??
       aiAnalysis?.wpmFeedback ??
@@ -403,12 +493,16 @@ export default function PracticePage() {
   const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
+  const [analysisStatusMessage, setAnalysisStatusMessage] = useState<string | null>(
+    null,
+  );
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const [isFetchingReport, setIsFetchingReport] = useState(false);
   const [feedbackReport, setFeedbackReport] =
     useState<PracticeFeedbackReport | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const reportRequestedRef = useRef(false);
+  const reportPollTokenRef = useRef(0);
   const realtime = usePracticeRealtime();
 
   const isIntroComplete = useMemo(() => {
@@ -439,6 +533,7 @@ export default function PracticePage() {
 
   useEffect(() => {
     return () => {
+      reportPollTokenRef.current += 1;
       previewAudioRef.current?.pause();
     };
   }, []);
@@ -639,8 +734,10 @@ export default function PracticePage() {
     }
 
     setPracticeError(null);
+    setAnalysisStatusMessage(null);
     setFeedbackReport(null);
     reportRequestedRef.current = false;
+    reportPollTokenRef.current += 1;
     setIsSubmittingPractice(true);
 
     try {
@@ -686,72 +783,87 @@ export default function PracticePage() {
     setStage("recording");
   };
 
-  useEffect(() => {
-    if (
-      !realtime.isAnalysisComplete ||
-      !practiceId ||
-      stage !== "analyzing" ||
-      isFetchingReport ||
-      reportRequestedRef.current
-    ) {
-      return;
-    }
+  const pollPracticeReport = async (targetPracticeId: number) => {
+    const pollToken = reportPollTokenRef.current + 1;
+    const deadline = Date.now() + REPORT_POLL_TIMEOUT_MS;
 
-    const loadReport = async () => {
-      reportRequestedRef.current = true;
-      setIsFetchingReport(true);
-      setPracticeError(null);
-      realtime.disconnect();
+    reportPollTokenRef.current = pollToken;
+    reportRequestedRef.current = true;
+    setIsFetchingReport(true);
+    setPracticeError(null);
+    setAnalysisStatusMessage("발표 음성을 분석하고 있습니다.");
+    realtime.disconnect();
 
-      try {
-        const report = await getPracticeReport(practiceId);
-        setFeedbackReport(mapPracticeReport(report, practiceScript));
-        setActiveFeedbackMetric(null);
-        setStage("record-finished");
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "분석 리포트를 불러오지 못했습니다.";
-        setPracticeError(message);
-      } finally {
+    try {
+      while (Date.now() <= deadline) {
+        const report = await getPracticeReport(targetPracticeId);
+
+        if (reportPollTokenRef.current !== pollToken) return;
+
+        const reportStatus = normalizePracticeStatus(report.status);
+
+        if (reportStatus === "ANALYZED") {
+          setFeedbackReport(mapPracticeReport(report, practiceScript));
+          setActiveFeedbackMetric(null);
+          setAnalysisStatusMessage(null);
+          setStage("record-finished");
+          return;
+        }
+
+        if (reportStatus === "FAILED") {
+          throw new Error(report.message ?? "발표 음성 분석에 실패했습니다.");
+        }
+
+        setAnalysisStatusMessage(getReportPollingMessage(report));
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, REPORT_POLL_INTERVAL_MS);
+        });
+      }
+
+      throw new Error("분석이 예상보다 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
+    } catch (error) {
+      if (reportPollTokenRef.current !== pollToken) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "분석 리포트를 불러오지 못했습니다.";
+      setPracticeError(message);
+      setAnalysisStatusMessage(null);
+      setStage("ready");
+    } finally {
+      if (reportPollTokenRef.current === pollToken) {
         setIsFetchingReport(false);
       }
-    };
-
-    void loadReport();
-  }, [
-    isFetchingReport,
-    practiceId,
-    practiceScript,
-    realtime,
-    realtime.isAnalysisComplete,
-    stage,
-  ]);
+    }
+  };
 
   const handleFinishRecord = async () => {
     try {
       const finalBlob = await stopRecording();
       setActiveFeedbackMetric(null);
+      setPracticeError(null);
+      setAnalysisStatusMessage("발표 음성을 업로드하고 있습니다.");
       setStage("analyzing");
 
-      if (practiceId && finalBlob) {
-        const result = await stopPractice(practiceId, finalBlob, elapsedSeconds);
-
-        if (["ANALYZED", "COMPLETED"].includes(result.status.toUpperCase())) {
-          reportRequestedRef.current = true;
-          realtime.disconnect();
-          setIsFetchingReport(true);
-          const report = await getPracticeReport(practiceId);
-          setFeedbackReport(mapPracticeReport(report, practiceScript));
-          setStage("record-finished");
-          setIsFetchingReport(false);
-        }
+      if (!practiceId || !finalBlob) {
+        throw new Error("분석할 녹음 데이터를 찾지 못했습니다.");
       }
+
+      const result = await stopPractice(practiceId, finalBlob, elapsedSeconds);
+      const stopStatus = normalizePracticeStatus(result.status);
+
+      if (stopStatus === "FAILED") {
+        throw new Error("발표 음성 분석에 실패했습니다.");
+      }
+
+      await pollPracticeReport(practiceId);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "녹음 종료 처리에 실패했습니다.";
       setPracticeError(message);
+      setAnalysisStatusMessage(null);
       setIsFetchingReport(false);
     }
   };
@@ -782,7 +894,6 @@ export default function PracticePage() {
               <FeedbackScriptPanel
                 title={practiceTitle}
                 script={displayedFeedbackReport.script}
-                activeMetricId={activeFeedbackMetric}
                 issues={displayedFeedbackReport.issues}
               />
 
@@ -889,11 +1000,14 @@ export default function PracticePage() {
               type="button"
               disabled
             >
-              {isFetchingReport ? "리포트 불러오는 중" : "분석 중"}
+              {isFetchingReport ? "결과 분석 중" : "분석 준비 중"}
             </button>
           )}
         </div>
 
+        {analysisStatusMessage && !practiceError && (
+          <p className="practice-page__recording-error">{analysisStatusMessage}</p>
+        )}
         {recordingError && (
           <p className="practice-page__recording-error">{recordingError}</p>
         )}
