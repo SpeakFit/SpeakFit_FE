@@ -7,6 +7,7 @@ type RealtimeStatus = "idle" | "connecting" | "connected" | "error";
 type RealtimeMessage = {
   highlight: RealtimeHighlight | null;
   transcript: string;
+  isAnalysisComplete: boolean;
 };
 
 type UsePracticeRealtimeResult = {
@@ -14,6 +15,7 @@ type UsePracticeRealtimeResult = {
   errorMessage: string | null;
   highlight: RealtimeHighlight | null;
   transcript: string;
+  isAnalysisComplete: boolean;
   connect: (practiceId: number, script: string) => void;
   sendAudioChunk: (chunk: Blob) => void;
   sendControl: (type: "pause" | "resume" | "stop") => void;
@@ -55,9 +57,28 @@ function asString(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
+function isAnalysisCompletePayload(payload: Record<string, unknown>) {
+  const status = asString(payload.status)?.toUpperCase();
+  const type = asString(payload.type)?.toUpperCase();
+  const event = asString(payload.event)?.toUpperCase();
+  const message = asString(payload.message);
+
+  return (
+    status === "ANALYZED" ||
+    status === "COMPLETED" ||
+    type === "ANALYSIS_COMPLETE" ||
+    type === "ANALYSIS_COMPLETED" ||
+    event === "ANALYSIS_COMPLETE" ||
+    event === "ANALYSIS_COMPLETED" ||
+    message?.includes("분석완료") ||
+    message?.includes("분석 완료") ||
+    false
+  );
+}
+
 function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage {
   if (typeof eventData !== "string") {
-    return { highlight: null, transcript: "" };
+    return { highlight: null, transcript: "", isAnalysisComplete: false };
   }
 
   try {
@@ -93,11 +114,14 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
         asString(payload.text) ??
         asString(payload.partial) ??
         "",
+      isAnalysisComplete: isAnalysisCompletePayload(payload),
     };
   } catch {
     return {
       highlight: { text: eventData },
       transcript: eventData,
+      isAnalysisComplete:
+        eventData.includes("분석완료") || eventData.includes("분석 완료"),
     };
   }
 }
@@ -107,6 +131,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<RealtimeHighlight | null>(null);
   const [transcript, setTranscript] = useState("");
+  const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   const sendControl = useCallback((type: "pause" | "resume" | "stop") => {
@@ -144,6 +169,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
       setErrorMessage(null);
       setHighlight(null);
       setTranscript("");
+      setIsAnalysisComplete(false);
 
       const socket = new WebSocket(wsUrl);
       socket.binaryType = "arraybuffer";
@@ -158,6 +184,9 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
         const message = parseRealtimeMessage(event.data);
         setTranscript(message.transcript);
         setHighlight(message.highlight);
+        if (message.isAnalysisComplete) {
+          setIsAnalysisComplete(true);
+        }
       };
 
       socket.onerror = () => {
@@ -189,6 +218,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     errorMessage,
     highlight,
     transcript,
+    isAnalysisComplete,
     connect,
     sendAudioChunk,
     sendControl,
