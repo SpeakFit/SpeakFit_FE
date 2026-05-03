@@ -136,7 +136,7 @@ export async function stopPractice(
   time: number,
 ) {
   const formData = new FormData();
-  formData.append("file", audio, getAudioFileName(audio));
+  formData.append("audio", audio, getAudioFileName(audio));
   formData.append("time", String(time));
 
   const { data } = await api.post<ApiResponse<StopPracticeResponse>>(
