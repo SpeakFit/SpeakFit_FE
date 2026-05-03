@@ -12,17 +12,21 @@ import PracticeStyleModal from "./components/PracticeStyleModal";
 import useAudioMeter from "./hooks/useAudioMeter";
 import usePracticeRealtime from "./hooks/usePracticeRealtime";
 import {
+  getPracticeReport,
   inputPracticeInfo,
   selectPracticeStyle,
   startPractice as requestStartPractice,
   stopPractice,
+  type PracticeReportResponse,
   type SpeechStyle,
 } from "../../api/practice";
 import { getScript } from "../../api/scripts";
 import type {
   FeedbackIssue,
+  FeedbackMetric,
   FeedbackMetricId,
   IntroFormState,
+  PracticeFeedbackReport,
   PracticeRouteState,
   PracticeStage,
   SpeechStyleId,
@@ -67,7 +71,50 @@ const getStoredPracticeRouteState = () => {
   }
 };
 
-const feedbackIssues: FeedbackIssue[] = [
+const DEFAULT_FEEDBACK_METRICS: FeedbackMetric[] = [
+  {
+    id: "speech-rate",
+    label: "발화 속도",
+    value: "조금 느림",
+    badge: "90wpm",
+    initial: "S",
+    tone: "slate",
+  },
+  {
+    id: "voice-energy",
+    label: "음성 에너지",
+    value: "낮음",
+    badge: "에너지 부족",
+    initial: "E",
+    tone: "amber",
+  },
+  {
+    id: "pause",
+    label: "멈춤 구간",
+    value: "주의",
+    badge: "2초+ 멈춤",
+    initial: "P",
+    tone: "amber",
+  },
+  {
+    id: "emphasis",
+    label: "강조 표현",
+    value: "낮음",
+    badge: "강조 부족",
+    initial: "M",
+    tone: "violet",
+  },
+  {
+    id: "clarity",
+    label: "발음 명료도",
+    value: "불명확",
+    badge: "ZCR 0.08",
+    initial: "M",
+    tone: "green",
+  },
+];
+
+const DEFAULT_FEEDBACK_ISSUES: FeedbackIssue[] = [
   {
     metricId: "speech-rate",
     excerpt: "발표를 준비할 때 대부분의 사람들은 내용 위주로만 연습하고,",
@@ -104,6 +151,16 @@ const feedbackIssues: FeedbackIssue[] = [
       "긴 나열 문장은 단어 사이를 조금 더 또렷하게 끊어 말하면 인식률과 전달력이 함께 좋아집니다.",
   },
 ];
+
+const DEFAULT_FEEDBACK_REPORT: PracticeFeedbackReport = {
+  script: SCRIPT_TEXT,
+  goalPercent: 67,
+  summary:
+    "전반적으로 안정적인 발화였지만, 강조 표현과 발음 명료도가 부족해 전달력이 다소 약하게 느껴졌습니다.",
+  tip: "핵심 키워드를 더 강조하고 문장 끝에서 짧게 멈추면 전달력이 좋아집니다.",
+  metrics: DEFAULT_FEEDBACK_METRICS,
+  issues: DEFAULT_FEEDBACK_ISSUES,
+};
 
 function mapAudienceAge(value: IntroFormState["audienceAge"]) {
   switch (value) {
@@ -150,6 +207,157 @@ function mapSpeechType(value: IntroFormState["speechType"]) {
   }
 }
 
+function getRecordValue(source: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+
+  return undefined;
+}
+
+function getStringValue(source: Record<string, unknown>, keys: string[]) {
+  const value = getRecordValue(source, keys);
+  return typeof value === "string" ? value : undefined;
+}
+
+function getNumberValue(source: Record<string, unknown>, keys: string[]) {
+  const value = getRecordValue(source, keys);
+
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function getRecordArray(source: Record<string, unknown>, keys: string[]) {
+  const value = getRecordValue(source, keys);
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => {
+        return typeof item === "object" && item !== null;
+      })
+    : [];
+}
+
+function mapMetricId(value: unknown, fallbackIndex: number): FeedbackMetricId {
+  const normalized = String(value ?? "").toLowerCase();
+
+  if (normalized.includes("voice") || normalized.includes("energy")) {
+    return "voice-energy";
+  }
+  if (normalized.includes("pause") || normalized.includes("silence")) {
+    return "pause";
+  }
+  if (normalized.includes("emphasis")) return "emphasis";
+  if (normalized.includes("clarity") || normalized.includes("pronunciation")) {
+    return "clarity";
+  }
+  if (normalized.includes("wpm") || normalized.includes("rate")) {
+    return "speech-rate";
+  }
+
+  return DEFAULT_FEEDBACK_METRICS[fallbackIndex]?.id ?? "speech-rate";
+}
+
+function mapPracticeReport(
+  report: PracticeReportResponse,
+  fallbackScript: string,
+): PracticeFeedbackReport {
+  const metricRows = getRecordArray(report, [
+    "metrics",
+    "metricList",
+    "analysisMetrics",
+    "analysisResults",
+  ]);
+  const issueRows = getRecordArray(report, [
+    "issues",
+    "feedbacks",
+    "feedbackList",
+    "sectionFeedbacks",
+    "sections",
+  ]);
+
+  const metrics =
+    metricRows.length > 0
+      ? metricRows.map((metric, index): FeedbackMetric => {
+          const fallback = DEFAULT_FEEDBACK_METRICS[index] ?? DEFAULT_FEEDBACK_METRICS[0];
+          const id = mapMetricId(
+            getRecordValue(metric, ["id", "metricId", "type", "metricType", "name"]),
+            index,
+          );
+
+          return {
+            id,
+            label:
+              getStringValue(metric, ["label", "name", "title", "metricName"]) ??
+              fallback.label,
+            value:
+              getStringValue(metric, ["value", "status", "level", "result"]) ??
+              fallback.value,
+            badge:
+              getStringValue(metric, ["badge", "detail", "scoreText", "displayValue"]) ??
+              fallback.badge,
+            initial: fallback.initial,
+            tone: fallback.tone,
+          };
+        })
+      : DEFAULT_FEEDBACK_METRICS;
+
+  const issues =
+    issueRows.length > 0
+      ? issueRows.map((issue, index): FeedbackIssue => {
+          return {
+            metricId: mapMetricId(
+              getRecordValue(issue, ["metricId", "type", "metricType", "category"]),
+              index,
+            ),
+            excerpt:
+              getStringValue(issue, [
+                "excerpt",
+                "targetText",
+                "text",
+                "sentence",
+                "scriptSegment",
+              ]) ?? "",
+            title:
+              getStringValue(issue, ["title", "summary", "feedbackTitle"]) ??
+              "상세 피드백",
+            description:
+              getStringValue(issue, [
+                "description",
+                "content",
+                "feedback",
+                "message",
+                "comment",
+              ]) ?? "분석 결과를 확인해보세요.",
+          };
+        })
+      : DEFAULT_FEEDBACK_ISSUES;
+
+  return {
+    script:
+      getStringValue(report, ["script", "scriptContent", "transcript", "content"]) ??
+      fallbackScript,
+    goalPercent:
+      getNumberValue(report, [
+        "goalPercent",
+        "targetMatchRate",
+        "targetRate",
+        "score",
+        "totalScore",
+      ]) ?? DEFAULT_FEEDBACK_REPORT.goalPercent,
+    summary:
+      getStringValue(report, ["summary", "overallFeedback", "totalFeedback", "comment"]) ??
+      DEFAULT_FEEDBACK_REPORT.summary,
+    tip: getStringValue(report, ["tip", "recommendation", "advice"]) ?? DEFAULT_FEEDBACK_REPORT.tip,
+    metrics,
+    issues,
+  };
+}
+
 export default function PracticePage() {
   const location = useLocation();
   const routeState =
@@ -180,7 +388,11 @@ export default function PracticePage() {
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
+  const [isFetchingReport, setIsFetchingReport] = useState(false);
+  const [feedbackReport, setFeedbackReport] =
+    useState<PracticeFeedbackReport | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const reportRequestedRef = useRef(false);
   const realtime = usePracticeRealtime();
   const displayedScript = isReadingMarksEnabled ? markedScript : practiceScript;
 
@@ -310,6 +522,7 @@ export default function PracticePage() {
       return "녹음 전";
     if (stage === "recording") return "녹음 중";
     if (stage === "paused") return "일시정지";
+    if (stage === "analyzing") return "분석 중";
     if (stage === "record-finished") return "녹음 완료";
     return "녹음 전";
   }, [stage]);
@@ -321,7 +534,7 @@ export default function PracticePage() {
     // - 현재는 UI placeholder만 표시
     if (stage === "recording") return "측정 중";
     if (stage === "paused") return "일시정지";
-    if (stage === "record-finished") return "분석 중";
+    if (stage === "analyzing" || stage === "record-finished") return "분석 중";
     return "--";
   }, [stage]);
 
@@ -408,6 +621,8 @@ export default function PracticePage() {
     setElapsedSeconds(0);
     setNextTriggerTime(maxSeconds);
     setPracticeError(null);
+    setFeedbackReport(null);
+    reportRequestedRef.current = false;
 
     const didStart = await hookStartRecording();
     if (!didStart) {
@@ -443,21 +658,79 @@ export default function PracticePage() {
     setStage("recording");
   };
 
+  useEffect(() => {
+    if (
+      !realtime.isAnalysisComplete ||
+      !practiceId ||
+      stage !== "analyzing" ||
+      isFetchingReport ||
+      reportRequestedRef.current
+    ) {
+      return;
+    }
+
+    const loadReport = async () => {
+      reportRequestedRef.current = true;
+      setIsFetchingReport(true);
+      setPracticeError(null);
+      realtime.disconnect();
+
+      try {
+        const report = await getPracticeReport(practiceId);
+        setFeedbackReport(mapPracticeReport(report, practiceScript));
+        setActiveFeedbackMetric(null);
+        setStage("record-finished");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "분석 리포트를 불러오지 못했습니다.";
+        setPracticeError(message);
+      } finally {
+        setIsFetchingReport(false);
+      }
+    };
+
+    void loadReport();
+  }, [
+    isFetchingReport,
+    practiceId,
+    practiceScript,
+    realtime,
+    realtime.isAnalysisComplete,
+    stage,
+  ]);
+
   const handleFinishRecord = async () => {
     try {
       const finalBlob = await stopRecording();
       setActiveFeedbackMetric(null);
-      setStage("record-finished");
-      realtime.disconnect();
+      setStage("analyzing");
 
       if (practiceId && finalBlob) {
-        await stopPractice(practiceId, finalBlob, elapsedSeconds);
+        const result = await stopPractice(practiceId, finalBlob, elapsedSeconds);
+
+        if (["ANALYZED", "COMPLETED"].includes(result.status.toUpperCase())) {
+          reportRequestedRef.current = true;
+          realtime.disconnect();
+          setIsFetchingReport(true);
+          const report = await getPracticeReport(practiceId);
+          setFeedbackReport(mapPracticeReport(report, practiceScript));
+          setStage("record-finished");
+          setIsFetchingReport(false);
+        }
       }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "녹음 종료 처리에 실패했습니다.";
       setPracticeError(message);
+      setIsFetchingReport(false);
     }
+  };
+
+  const displayedFeedbackReport = feedbackReport ?? {
+    ...DEFAULT_FEEDBACK_REPORT,
+    script: practiceScript,
   };
 
   return (
@@ -480,13 +753,17 @@ export default function PracticePage() {
             <>
               <FeedbackScriptPanel
                 title={practiceTitle}
-                script={practiceScript}
+                script={displayedFeedbackReport.script}
                 activeMetricId={activeFeedbackMetric}
-                issues={feedbackIssues}
+                issues={displayedFeedbackReport.issues}
               />
 
               <FeedbackMetricsPanel
                 activeMetricId={activeFeedbackMetric}
+                goalPercent={displayedFeedbackReport.goalPercent}
+                metrics={displayedFeedbackReport.metrics}
+                summary={displayedFeedbackReport.summary}
+                tip={displayedFeedbackReport.tip}
                 onSelectMetric={setActiveFeedbackMetric}
               />
             </>
@@ -539,12 +816,7 @@ export default function PracticePage() {
                 일시 정지
               </button>
 
-              <button
-                className="practice-page__btn practice-page__btn--primary"
-                onClick={handleFinishRecord}
-              >
-                발표 완료
-              </button>
+              <RecordButton onClick={handleFinishRecord} />
             </>
           )}
 
@@ -564,6 +836,16 @@ export default function PracticePage() {
                 발표 완료
               </button>
             </>
+          )}
+
+          {stage === "analyzing" && (
+            <button
+              className="practice-page__btn practice-page__btn--primary"
+              type="button"
+              disabled
+            >
+              {isFetchingReport ? "리포트 불러오는 중" : "분석 중"}
+            </button>
           )}
         </div>
 

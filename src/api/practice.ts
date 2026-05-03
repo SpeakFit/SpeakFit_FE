@@ -59,6 +59,14 @@ export type InputPracticeInfoResponse = {
   styleList: SpeechStyle[];
 };
 
+export type StopPracticeResponse = {
+  practiceId: number;
+  status: "ANALYZING" | "ANALYZED" | string;
+  audioUrl: string;
+};
+
+export type PracticeReportResponse = Record<string, unknown>;
+
 const AUDIO_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   "audio/mp4": "mp4",
   "audio/mpeg": "mp3",
@@ -128,13 +136,21 @@ export async function stopPractice(
   time: number,
 ) {
   const formData = new FormData();
-  formData.append("audio", audio, getAudioFileName(audio));
+  formData.append("file", audio, getAudioFileName(audio));
   formData.append("time", String(time));
 
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<StopPracticeResponse>>(
     `/api/practices/${practiceId}/stop`,
     formData,
   );
 
   return unwrapResponse(data, "연습 종료 요청에 실패했습니다.");
+}
+
+export async function getPracticeReport(practiceId: number) {
+  const { data } = await api.get<ApiResponse<PracticeReportResponse>>(
+    `/api/practices/${practiceId}/report`,
+  );
+
+  return unwrapResponse(data, "분석 리포트를 불러오지 못했습니다.");
 }
