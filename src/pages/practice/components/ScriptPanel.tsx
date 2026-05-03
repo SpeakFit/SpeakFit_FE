@@ -1,9 +1,15 @@
 import { useMemo, type ReactNode } from "react";
-import type { RealtimeHighlight } from "../types";
+import type { PracticeContentItem, StartPracticeSentence, StartPracticeWord } from "../../../api/practice";
+import type { RealtimeHighlight, WordRealtimeFeedback } from "../types";
 
 type ScriptPanelProps = {
   title: string;
   script: string;
+  markedScript: string;
+  sentences: StartPracticeSentence[];
+  contentList: PracticeContentItem[];
+  lastReadIndex: number;
+  wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
   isRecording: boolean;
   statusText: string;
   time: string;
@@ -13,112 +19,53 @@ type ScriptPanelProps = {
   onToggleReadingMarks: (enabled: boolean) => void;
 };
 
-type HighlightRange = {
-  lineIndex: number;
-  startOffset: number;
-  endOffset: number;
+
+type WordToken = {
+  type: "word";
+  text: string;
+  index: number;
+  isEmphasis: boolean;
+  hasBreak: boolean;
 };
 
-function getHighlightRanges(script: string, highlight?: RealtimeHighlight | null) {
-  if (!highlight) return [];
+type SpaceToken = {
+  type: "space";
+  text: string;
+};
 
-  const lines = script.split("\n");
+type ScriptToken = WordToken | SpaceToken;
 
-  if (
-    highlight.lineIndex !== undefined &&
-    highlight.startOffset !== undefined &&
-    highlight.endOffset !== undefined
-  ) {
-    const line = lines[highlight.lineIndex];
+type ParagraphItem = {
+  type: "paragraph";
+  tokens: ScriptToken[];
+};
 
-    if (line !== undefined) {
-      return [
-        {
-          lineIndex: highlight.lineIndex,
-          startOffset: Math.max(0, highlight.startOffset),
-          endOffset: Math.min(line.length, highlight.endOffset),
-        },
-      ].filter((range) => range.endOffset > range.startOffset);
-    }
-  }
+type LineItem = {
+  type: "line";
+  content: string;
+  key: string;
+};
 
-  if (highlight.wordIndex !== undefined) {
-    let currentWordIndex = 0;
+type ContentItem = ParagraphItem | LineItem;
 
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-      const line = lines[lineIndex];
-      const words = line.matchAll(/\S+/g);
-
-      for (const word of words) {
-        const startOffset = word.index ?? 0;
-        const endOffset = startOffset + word[0].length;
-
-        if (currentWordIndex === highlight.wordIndex) {
-          return [{ lineIndex, startOffset, endOffset }];
-        }
-
-        currentWordIndex += 1;
-      }
-    }
-  }
-
-  if (highlight.text) {
-    const target = highlight.text.trim();
-    if (!target) return [];
-
-    const matchedRanges: HighlightRange[] = [];
-    lines.forEach((line, lineIndex) => {
-      const startOffset = line.indexOf(target);
-
-      if (startOffset >= 0) {
-        matchedRanges.push({
-          lineIndex,
-          startOffset,
-          endOffset: startOffset + target.length,
-        });
-      }
-    });
-
-    return matchedRanges.slice(0, 1);
-  }
-
-  return [];
-}
-
-function renderLineWithHighlight(line: string, range?: HighlightRange) {
-  if (!range) return renderMarkedText(line);
-
-  return (
-    <>
-      {renderMarkedText(line.slice(0, range.startOffset), "before")}
-      <mark className="script-panel__realtime-highlight">
-        {renderMarkedText(line.slice(range.startOffset, range.endOffset), "highlight")}
-      </mark>
-      {renderMarkedText(line.slice(range.endOffset), "after")}
-    </>
-  );
-}
-
-function renderMarkedText(text: string, keyPrefix = "text") {
-  if (!text) return "\u00A0";
-
+function renderMarkedLine(line: string) {
   const parts: ReactNode[] = [];
   const markPattern = /(\*\[[^\]]+\]\*|\*[^*\s][^*]*\*|\/\/|\/)/g;
   let lastIndex = 0;
   let matchIndex = 0;
 
-  for (const match of text.matchAll(markPattern)) {
+  for (const match of line.matchAll(markPattern)) {
     const matchedText = match[0];
     const startIndex = match.index ?? 0;
 
     if (startIndex > lastIndex) {
-      parts.push(text.slice(lastIndex, startIndex));
+      parts.push(line.slice(lastIndex, startIndex));
     }
 
     if (matchedText === "/" || matchedText === "//") {
       parts.push(
         <span
-          key={`${keyPrefix}-pause-${matchIndex}`}
+          key={`pause-${matchIndex}`}
           className="script-panel__reading-pause"
         >
           {matchedText}
@@ -131,7 +78,7 @@ function renderMarkedText(text: string, keyPrefix = "text") {
 
       parts.push(
         <span
-          key={`${keyPrefix}-emphasis-${matchIndex}`}
+          key={`emphasis-${matchIndex}`}
           className="script-panel__reading-emphasis"
         >
           {emphasisText}
@@ -143,16 +90,21 @@ function renderMarkedText(text: string, keyPrefix = "text") {
     matchIndex += 1;
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+  if (lastIndex < line.length) {
+    parts.push(line.slice(lastIndex));
   }
 
-  return parts.length > 0 ? parts : text;
+  return parts.length > 0 ? parts : line;
 }
 
 export default function ScriptPanel({
   title,
   script,
+  markedScript,
+  sentences,
+  contentList,
+  lastReadIndex,
+  wordFeedbackByIndex,
   isRecording,
   statusText,
   time,
@@ -161,10 +113,61 @@ export default function ScriptPanel({
   realtimeTranscript,
   onToggleReadingMarks,
 }: ScriptPanelProps) {
-  const highlightRanges = useMemo(
-    () => getHighlightRanges(script, realtimeHighlight),
-    [script, realtimeHighlight],
-  );
+  const content = useMemo<ContentItem[]>(() => {
+    if (sentences.length === 0) {
+      const displayScript = isReadingMarksEnabled ? markedScript : script;
+
+      return displayScript.split("\n").map((line, i) => ({
+        type: "line",
+        content: line,
+        key: `line-${i}`,
+      }));
+    }
+
+    const result: ContentItem[] = [];
+    let currentParagraphTokens: ScriptToken[] = [];
+    let lastProcessedCharIdx = 0;
+
+    const contentMap = new Map<number, PracticeContentItem>();
+    contentList.forEach((item) => contentMap.set(item.index, item));
+
+    sentences.forEach((sentence) => {
+      const gap = script.slice(lastProcessedCharIdx, sentence.startCharIndex);
+      if (gap.includes("\n")) {
+        if (currentParagraphTokens.length > 0) {
+          result.push({ type: "paragraph", tokens: currentParagraphTokens });
+          currentParagraphTokens = [];
+        }
+      } else if (gap) {
+        currentParagraphTokens.push({ type: "space", text: gap });
+      }
+
+      sentence.words.forEach((word: StartPracticeWord, wIdx: number) => {
+        const prevEnd = wIdx === 0 ? sentence.startCharIndex : sentence.words[wIdx - 1].endCharIndex;
+        const wordGap = script.slice(prevEnd, word.startCharIndex);
+        if (wordGap) {
+          currentParagraphTokens.push({ type: "space", text: wordGap });
+        }
+
+        const meta = contentMap.get(word.globalWordIndex);
+        currentParagraphTokens.push({
+          type: "word",
+          text: word.text,
+          index: word.globalWordIndex,
+          isEmphasis: meta?.isEmphasis || false,
+          hasBreak: meta?.hasBreak ?? false,
+        });
+      });
+
+      lastProcessedCharIdx = sentence.endCharIndex;
+    });
+
+    if (currentParagraphTokens.length > 0) {
+      result.push({ type: "paragraph", tokens: currentParagraphTokens });
+    }
+
+    return result;
+  }, [sentences, script, markedScript, contentList, isReadingMarksEnabled]);
 
   return (
     <section className="script-panel">
@@ -179,20 +182,65 @@ export default function ScriptPanel({
       </div>
 
       <div className="script-panel__body">
-        {script.split("\n").map((line, index) => (
-          <p key={`${line}-${index}`} className="script-panel__paragraph">
-            {renderLineWithHighlight(
-              line,
-              highlightRanges.find((range) => range.lineIndex === index),
-            )}
-          </p>
-        ))}
+        {content.map((item, idx) => {
+          if (item.type === "line") {
+            return (
+              <p key={item.key} className="script-panel__paragraph">
+                {isReadingMarksEnabled ? renderMarkedLine(item.content) : item.content}
+              </p>
+            );
+          }
+
+          return (
+            <p key={`p-${idx}`} className="script-panel__paragraph">
+              {item.tokens.map((token, tIdx) => {
+                if (token.type === "space") return token.text;
+                
+                const feedback = wordFeedbackByIndex[token.index];
+                const isIncorrect = feedback?.isCorrect === false;
+                const isRead = token.index <= lastReadIndex || feedback?.isCorrect === true;
+                const isCurrent = realtimeHighlight?.wordIndex === token.index;
+                
+                const wordElement = (
+                  <span
+                    key={`w-${token.index}`}
+                    className={`script-panel__word ${
+                      isRead ? "script-panel__word--read" : ""
+                    } ${isIncorrect ? "script-panel__word--incorrect" : ""} ${
+                      isCurrent ? "script-panel__realtime-highlight" : ""
+                    } ${
+                      isCurrent && isIncorrect ? "script-panel__realtime-highlight--incorrect" : ""
+                    } ${
+                      isReadingMarksEnabled && token.isEmphasis ? "script-panel__reading-emphasis" : ""
+                    }`}
+                    title={
+                      feedback
+                        ? `인식: ${feedback.spokenWord || "-"} / 점수: ${Math.round(feedback.matchScore * 100)}%`
+                        : undefined
+                    }
+                  >
+                    {token.text}
+                  </span>
+                );
+
+                return (
+                  <span key={`group-${tIdx}`} style={{ display: "inline" }}>
+                    {wordElement}
+                    {isReadingMarksEnabled && token.hasBreak && (
+                      <span className="script-panel__reading-pause"> /</span>
+                    )}
+                  </span>
+                );
+              })}
+            </p>
+          );
+        })}
       </div>
 
       <div className="script-panel__footer">
         <div className="script-panel__legend">
-          <span className="script-panel__legend-item">/ 짧은 멈춤(0.3~0.5초)</span>
-          <span className="script-panel__legend-item">// 긴 멈춤(1초 이상)</span>
+          <span className="script-panel__legend-item">/ 짧은 멈춤</span>
+          <span className="script-panel__legend-item">// 긴 멈춤</span>
           <span className="script-panel__legend-item is-accent">강조</span>
           {realtimeTranscript && (
             <span className="script-panel__legend-item is-live">
@@ -206,7 +254,7 @@ export default function ScriptPanel({
           <div
             className="script-panel__toggle-pill"
             role="group"
-            aria-label="낭독기호 표시 토글"
+            aria-label="낭독기호 표시 전환"
           >
             <button
               type="button"
@@ -234,3 +282,4 @@ export default function ScriptPanel({
     </section>
   );
 }
+

@@ -59,7 +59,14 @@ export default function FeedbackMetricsPanel({
           </div>
         </div>
 
-        <p>{summary}</p>
+        <p>
+          {summary.split("\n").map((line, i) => (
+            <span key={i}>
+              {line}
+              <br />
+            </span>
+          ))}
+        </p>
       </section>
 
       <div className="feedback-metric-grid">
