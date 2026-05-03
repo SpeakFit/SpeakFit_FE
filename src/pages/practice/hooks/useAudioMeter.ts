@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type RecorderStatus = "idle" | "recording" | "paused";
-type AudioChunkHandler = (chunk: Blob) => void;
+type AudioChunkHandler = (chunk: ArrayBuffer) => void;
 
 type UseAudioMeterOptions = {
   onAudioChunk?: AudioChunkHandler;
@@ -32,10 +32,12 @@ export default function useAudioMeter(
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const isStreamingRef = useRef(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorNodeRef = useRef<ScriptProcessorNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   const mimeTypeRef = useRef<string>("");
@@ -83,6 +85,7 @@ export default function useAudioMeter(
   }, []);
 
   const cleanupStream = useCallback(() => {
+    isStreamingRef.current = false;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, []);
@@ -92,9 +95,11 @@ export default function useAudioMeter(
 
     sourceNodeRef.current?.disconnect();
     analyserRef.current?.disconnect();
+    processorNodeRef.current?.disconnect();
 
     sourceNodeRef.current = null;
     analyserRef.current = null;
+    processorNodeRef.current = null;
 
     if (audioContextRef.current) {
       await audioContextRef.current.close();
@@ -139,23 +144,42 @@ export default function useAudioMeter(
       mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          onAudioChunkRef.current?.(event.data);
         }
       };
 
       mediaRecorder.start(500);
 
-      const audioContext = new AudioContext();
+      const audioContext = new AudioContext({ sampleRate: 16000 });
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
 
       const sourceNode = audioContext.createMediaStreamSource(stream);
+      const processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+
+      processorNode.onaudioprocess = (event) => {
+        if (!isStreamingRef.current) return;
+
+        const input = event.inputBuffer.getChannelData(0);
+        const pcm = new Int16Array(input.length);
+
+        for (let i = 0; i < input.length; i += 1) {
+          const sample = Math.max(-1, Math.min(1, input[i]));
+          pcm[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+        }
+
+        onAudioChunkRef.current?.(pcm.buffer);
+      };
+
       sourceNode.connect(analyser);
+      sourceNode.connect(processorNode);
+      processorNode.connect(audioContext.destination);
 
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
       sourceNodeRef.current = sourceNode;
+      processorNodeRef.current = processorNode;
 
+      isStreamingRef.current = true;
       setStatus("recording");
       startMeterLoop();
       return true;
@@ -190,6 +214,7 @@ export default function useAudioMeter(
 
     if (recorder.state === "recording") {
       recorder.pause();
+      isStreamingRef.current = false;
       setStatus("paused");
       stopMeterLoop();
     }
@@ -201,6 +226,7 @@ export default function useAudioMeter(
 
     if (recorder.state === "paused") {
       recorder.resume();
+      isStreamingRef.current = true;
       setStatus("recording");
       startMeterLoop();
     }
