@@ -648,11 +648,10 @@ export default function PracticePage() {
       return;
     }
 
-    setStage("recording");
-    realtime.connect(practiceId, practiceScript);
-
     try {
-      await requestStartPractice(practiceId);
+      const practice = await requestStartPractice(practiceId);
+      setStage("recording");
+      realtime.connect(practiceId, practice.scriptWords);
     } catch (error) {
       await stopRecording();
       realtime.disconnect();
