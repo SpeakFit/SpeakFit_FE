@@ -17,8 +17,8 @@ import {
   selectPracticeStyle,
   startPractice as requestStartPractice,
   stopPractice,
-  type PracticeContent,
-  type SentenceRes,
+  type PracticeContentItem,
+  type StartPracticeSentence,
   type PracticeReportResponse,
   type PracticeSentenceResponse,
   type SpeechStyle,
@@ -398,8 +398,8 @@ export default function PracticePage() {
   >(null);
   const [nextTriggerTime, setNextTriggerTime] = useState<number | null>(null);
   const [practiceId, setPracticeId] = useState<number | null>(null);
-  const [practiceSentences, setPracticeSentences] = useState<SentenceRes[]>([]);
-  const [practiceContent, setPracticeContent] = useState<PracticeContent[]>([]);
+  const [practiceSentences, setPracticeSentences] = useState<StartPracticeSentence[]>([]);
+  const [practiceContent, setPracticeContent] = useState<PracticeContentItem[]>([]);
   const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
@@ -649,12 +649,6 @@ export default function PracticePage() {
       setPracticeSentences(startRes.sentences);
       setPracticeContent(startRes.contentList);
 
-      if (startRes.webSocketUrl) {
-        await realtime.connect(startRes.webSocketUrl, startRes.scriptWords);
-      } else {
-        throw new Error("실시간 분석 서버 주소가 없습니다.");
-      }
-
       const durationNumber = Number(introForm.duration);
       const maxSeconds = durationNumber * 60;
       setElapsedSeconds(0);
@@ -662,12 +656,12 @@ export default function PracticePage() {
 
       const didStart = await hookStartRecording();
       if (!didStart) {
-        realtime.disconnect();
         setNextTriggerTime(null);
         return;
       }
 
       setStage("recording");
+      await realtime.connect(practiceId, startRes.scriptWords, startRes.webSocketUrl);
     } catch (error) {
       realtime.disconnect();
       setStage("ready");
@@ -694,15 +688,46 @@ export default function PracticePage() {
 
   useEffect(() => {
     if (
-      !realtime.isAnalysisComplete &&
-      stage === "analyzing" &&
-      !isFetchingReport &&
-      !reportRequestedRef.current
+      !realtime.isAnalysisComplete ||
+      !practiceId ||
+      stage !== "analyzing" ||
+      isFetchingReport ||
+      reportRequestedRef.current
     ) {
-      // isAnalysisComplete가 필수는 아니지만, 있으면 리포트를 불러올 시점의 힌트가 됩니다.
-      // 여기서는 handleFinishRecord에서 직접 처리하므로 보조적인 역할입니다.
+      return;
     }
-  }, [realtime.isAnalysisComplete, stage, isFetchingReport]);
+
+    const loadReport = async () => {
+      reportRequestedRef.current = true;
+      setIsFetchingReport(true);
+      setPracticeError(null);
+      realtime.disconnect();
+
+      try {
+        const report = await getPracticeReport(practiceId);
+        setFeedbackReport(mapPracticeReport(report, practiceScript));
+        setActiveFeedbackMetric(null);
+        setStage("record-finished");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "분석 리포트를 불러오지 못했습니다.";
+        setPracticeError(message);
+      } finally {
+        setIsFetchingReport(false);
+      }
+    };
+
+    void loadReport();
+  }, [
+    isFetchingReport,
+    practiceId,
+    practiceScript,
+    realtime,
+    realtime.isAnalysisComplete,
+    stage,
+  ]);
 
   const handleFinishRecord = async () => {
     try {

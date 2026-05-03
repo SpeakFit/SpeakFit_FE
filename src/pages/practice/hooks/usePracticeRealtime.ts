@@ -9,7 +9,19 @@ type RealtimeMessage = {
   highlight: RealtimeHighlight | null;
   transcript: string;
   error?: string;
-  isAnalysisComplete?: boolean;
+  isAnalysisComplete: boolean;
+};
+
+type RealtimeScriptWord = {
+  scriptWordId: number;
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  globalWordIndex: number;
+  sentenceWordIndex: number;
+  text: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
 };
 
 type UsePracticeRealtimeResult = {
@@ -20,13 +32,43 @@ type UsePracticeRealtimeResult = {
   wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
   transcript: string;
   isAnalysisComplete: boolean;
-  connect: (wsUrl: string, scriptWords: WordRes[]) => Promise<void>;
+  connect: (practiceId: number, scriptWords: RealtimeScriptWord[], wsUrl?: string) => Promise<void>;
   sendAudioChunk: (chunk: ArrayBuffer) => void;
   sendControl: (type: "pause" | "resume" | "stop") => void;
   disconnect: () => void;
 };
 
 const WS_READY_OPEN = 1;
+
+function getRealtimeWsUrl(practiceId: number) {
+  const configuredUrl = import.meta.env.VITE_PRACTICE_WS_URL as string | undefined;
+  const aiBaseUrl = import.meta.env.VITE_AI_BASE_URL as string | undefined;
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const realtimeBaseUrl = configuredUrl ?? aiBaseUrl ?? apiBaseUrl;
+
+  if (!realtimeBaseUrl) return null;
+
+  const url = new URL(realtimeBaseUrl);
+  const token = getStoredAccessToken();
+
+  url.protocol = url.protocol.replace(/^http/, "ws");
+  const basePath = url.pathname.replace(/\/$/, "");
+
+  if (/\/ws\/practice\/[^/]+$/.test(basePath)) {
+    url.pathname = basePath.replace(
+      /\/ws\/practice\/[^/]+$/,
+      `/ws/practice/${practiceId}`,
+    );
+  } else if (basePath.endsWith("/ws/practice")) {
+    url.pathname = `${basePath}/${practiceId}`;
+  } else {
+    url.pathname = `${basePath}/ws/practice/${practiceId}`.replace(/^\/\//, "/");
+  }
+
+  if (token) url.searchParams.set("token", token);
+
+  return url.toString();
+}
 
 function asNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -67,7 +109,6 @@ function parseWordResults(value: unknown): WordRealtimeFeedback[] {
     ];
   });
 }
-
 function isAnalysisCompletePayload(payload: Record<string, unknown>) {
   const status = asString(payload.status)?.toUpperCase();
   const type = asString(payload.type)?.toUpperCase();
@@ -89,11 +130,12 @@ function isAnalysisCompletePayload(payload: Record<string, unknown>) {
 
 function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage {
   if (typeof eventData !== "string") {
-    return { highlight: null, transcript: "" };
+    return { highlight: null, transcript: "", isAnalysisComplete: false };
   }
 
   try {
     const payload = JSON.parse(eventData) as Record<string, unknown>;
+    const isComplete = isAnalysisCompletePayload(payload);
     
     if (payload.type === "highlight") {
       const wordResults = parseWordResults(payload.wordResults);
@@ -106,7 +148,7 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
           wordResults,
         },
         transcript: asString(payload.transcript) ?? "",
-        isAnalysisComplete: isAnalysisCompletePayload(payload),
+        isAnalysisComplete: isComplete,
       };
     }
 
@@ -119,21 +161,21 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
         highlight: null,
         transcript: "",
         error: asString(payload.message) ?? "STT 서버 오류가 발생했습니다.",
+        isAnalysisComplete: isComplete,
       };
     }
 
     return { 
       highlight: null, 
       transcript: asString(payload.transcript) ?? "",
-      isAnalysisComplete: isAnalysisCompletePayload(payload)
+      isAnalysisComplete: isComplete
     };
   } catch {
+    const isComplete = eventData.includes("분석완료") || eventData.includes("분석 완료");
     return {
       highlight: null,
       transcript: typeof eventData === "string" ? eventData : "",
-      isAnalysisComplete:
-        typeof eventData === "string" &&
-        (eventData.includes("분석완료") || eventData.includes("분석 완료")),
+      isAnalysisComplete: isComplete,
     };
   }
 }
@@ -172,14 +214,17 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   }, []);
 
   const connect = useCallback(
-    (wsUrl: string, scriptWords: WordRes[]) => {
+    (practiceId: number, scriptWords: RealtimeScriptWord[], wsUrl?: string) => {
       return new Promise<void>((resolve, reject) => {
         disconnect();
 
-        if (!wsUrl) {
+        const finalWsUrl = wsUrl ?? getRealtimeWsUrl(practiceId);
+
+        if (!finalWsUrl) {
+          const err = "실시간 분석 서버 주소가 설정되지 않았습니다.";
           setStatus("error");
-          setErrorMessage("실시간 분석 서버 주소가 없습니다.");
-          reject(new Error("No WebSocket URL"));
+          setErrorMessage(err);
+          reject(new Error(err));
           return;
         }
 
@@ -192,15 +237,8 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
         setIsAnalysisComplete(false);
 
         let isReadyReceived = false;
-        const socket = new WebSocket(wsUrl);
+        const socket = new WebSocket(finalWsUrl);
         socket.binaryType = "arraybuffer";
-        const token = getStoredAccessToken();
-        if (token && wsUrl.includes("token=") === false) {
-          // URL에 토큰이 없으면 searchParams로 추가 시도 (하지만 wsUrl은 이미 string임)
-          // 여기서는 wsUrl이 이미 필요한 정보를 포함하고 있다고 가정하거나,
-          // 필요시 URL 객체로 변환하여 처리합니다.
-        }
-        
         socketRef.current = socket;
 
         const timeoutId = setTimeout(() => {
@@ -217,6 +255,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
           socket.send(
             JSON.stringify({
               type: "init",
+              practiceId,
               scriptWords: scriptWords,
               audioEncoding: "LINEAR16",
               sampleRateHertz: 16000,

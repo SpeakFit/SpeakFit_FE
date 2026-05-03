@@ -59,15 +59,30 @@ export type InputPracticeInfoResponse = {
   styleList: SpeechStyle[];
 };
 
-export type PracticeContent = {
+export type PracticeContentItem = {
   index: number;
   word: string;
   hasBreak: boolean;
-  emphasis?: boolean;
-  isEmphasis?: boolean;
+  isEmphasis: boolean;
 };
 
-export type WordRes = {
+export type SelectPracticeStyleResponse = {
+  practiceId: number;
+  styleType: StyleType;
+  contentList: PracticeContentItem[];
+};
+
+export type StartPracticeSentence = {
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  originalText: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+  words: StartPracticeWord[];
+};
+
+export type StartPracticeWord = {
   scriptWordId: number;
   scriptSentenceId: number;
   sentenceIndex: number;
@@ -79,30 +94,14 @@ export type WordRes = {
   endCharIndex: number;
 };
 
-export type SentenceRes = {
-  scriptSentenceId: number;
-  sentenceIndex: number;
-  originalText: string;
-  normalizedText: string;
-  startCharIndex: number;
-  endCharIndex: number;
-  words: WordRes[];
-};
-
-export type SelectPracticeStyleResponse = {
-  practiceId: number;
-  styleType: StyleType;
-  contentList: PracticeContent[];
-};
-
 export type StartPracticeResponse = {
   practiceId: number;
   title: string;
   webSocketUrl?: string;
   status: string;
-  contentList: PracticeContent[];
-  sentences: SentenceRes[];
-  scriptWords: WordRes[];
+  contentList: PracticeContentItem[];
+  sentences: StartPracticeSentence[];
+  scriptWords: StartPracticeWord[];
   createdAt?: string;
 };
 

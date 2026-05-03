@@ -17,8 +17,9 @@ export default function FeedbackMetricsPanel({
   tip,
   onSelectMetric,
 }: FeedbackMetricsPanelProps) {
+  const safeGoalPercent = Math.min(100, Math.max(0, goalPercent));
   const circumference = Math.PI * 84;
-  const strokeOffset = circumference - (goalPercent / 100) * circumference;
+  const strokeOffset = circumference - (safeGoalPercent / 100) * circumference;
 
   return (
     <aside className="feedback-metrics-panel">
@@ -54,7 +55,7 @@ export default function FeedbackMetricsPanel({
           </svg>
           <div>
             <span>목표치</span>
-            <strong>{goalPercent}%</strong>
+            <strong>{safeGoalPercent}%</strong>
           </div>
         </div>
 
