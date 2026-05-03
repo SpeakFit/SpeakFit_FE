@@ -140,8 +140,65 @@
   font-size: 27px;
   line-height: 1.7;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #202938;
+}
+
+/* 실시간 단어 하이라이팅 스타일 추가 */
+.script-panel__word {
+  display: inline;
+  color: #202938; /* 읽기 전: 본문과 동일한 색상으로 일관성 유지 */
+  transition: background-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+              color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+              box-shadow 0.4s ease;
+  margin-right: 0.25em;
+  word-break: keep-all;
+  border-radius: 6px;
+  padding: 2px 0;
+}
+
+.script-panel__word--read {
+  background: #e6f8f3; /* 읽은 후: 배경만 연한 민트색으로 변경 */
+  color: #202938;
+  font-weight: 500;
+}
+
+.script-panel__realtime-highlight {
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: #33cbbd; /* 실시간 강조: 더 진한 민트 배경 */
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(51, 203, 189, 0.3);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  z-index: 1;
+  position: relative;
+}
+
+.script-panel__word--incorrect {
+  color: #e26d76 !important; /* 틀린 단어 피드백이 최우선입니다. */
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.script-panel__realtime-highlight--incorrect {
+  background: #e26d76;
+  color: #ffffff;
+}
+
+.script-panel__word--incorrect.script-panel__reading-emphasis {
+  color: #e26d76 !important;
+}
+
+.script-panel__reading-emphasis {
+  color: #33cbbd; /* !important 제거: 다른 상태와 조합될 수 있도록 함 */
+  font-weight: 700;
+}
+
+.script-panel__reading-pause {
+  color: #9aa3af;
+  font-weight: 500;
 }
 
 .script-panel__footer {
@@ -165,6 +222,15 @@
 .script-panel__legend-item.is-accent {
   color: #33cbbd;
   font-weight: 700;
+}
+
+.script-panel__legend-item.is-live {
+  max-width: min(420px, 40vw);
+  overflow: hidden;
+  color: #202938;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .script-panel__toggle {
@@ -339,7 +405,12 @@
   bottom: 40px;
   z-index: 100;
   display: flex;
+  align-items: center;
   gap: 12px;
+}
+
+.practice-page__record-controls .record-button-wrap {
+  position: static;
 }
 
 .practice-page__recording-error {
