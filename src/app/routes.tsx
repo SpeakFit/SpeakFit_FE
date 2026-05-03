@@ -7,6 +7,8 @@ import LoginPage from "../pages/login/LoginPage";
 import SignupPage from "../pages/signup/SignupPage";
 import ScriptPage from "../pages/script/ScriptPage";
 import PracticePage from "../pages/practice/PracticePage";
+import VoiceRecordingPage from "../pages/voice-recording/VoiceRecordingPage";
+import FeedbackAnalysisPage from "../pages/feedback-analysis/FeedbackAnalysisPage";
 import { ROUTES } from "./routes.const";
 
 export const router = createBrowserRouter([
@@ -23,7 +25,15 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: ROUTES.VOICE_RECORDING,
+    element: <VoiceRecordingPage />,
+  },
+  {
+    path: ROUTES.FEEDBACK,
+    element: <FeedbackAnalysisPage />,
+  },
+  {
     element: <PracticeLayout />,
-    children: [{ path: "/practice", element: <PracticePage /> }],
+    children: [{ path: ROUTES.PRACTICE, element: <PracticePage /> }],
   },
 ]);

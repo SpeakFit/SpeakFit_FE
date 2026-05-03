@@ -1,14 +1,15 @@
 import "./PracticeHeader.css";
+import { useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { clearAuthSession, getStoredUser } from "../../../api/authStorage";
 import speakfitLogo from "../../../assets/speakfit-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
 import { ROUTES } from "../../../app/routes.const";
+import { clearAuthSession, getStoredUser } from "../../../api/auth";
 
 export default function PracticeHeader() {
   const navigate = useNavigate();
-  const user = getStoredUser();
-  const nickname = user?.nickname?.trim() || "사용자";
+  const user = useMemo(() => getStoredUser(), []);
+  const displayName = user?.nickname?.trim() || "사용자";
 
   const handleLogout = () => {
     clearAuthSession();
@@ -29,11 +30,10 @@ export default function PracticeHeader() {
           <span className="practice-header__brand">Speakfit</span>
         </Link>
 
-        {/* RIGHT */}
         <div className="practice-header__right">
           <div className="practice-header__user">
             <img src={userIcon} alt="user" />
-            <span>{nickname}</span>
+            <span>{displayName}</span>
           </div>
 
           <button
@@ -44,7 +44,6 @@ export default function PracticeHeader() {
             로그아웃
           </button>
         </div>
-
       </div>
     </header>
   );

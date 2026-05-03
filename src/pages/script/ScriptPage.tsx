@@ -227,7 +227,10 @@ const ScriptPage = () => {
     }
   };
 
-  const updateSelectedScript = <K extends keyof ScriptItem>(key: K, value: ScriptItem[K]) => {
+  const updateSelectedScript = <K extends keyof ScriptItem>(
+    key: K,
+    value: ScriptItem[K]
+  ) => {
     if (!selectedScript) return;
 
     setScripts((prev) =>
@@ -382,7 +385,10 @@ const ScriptPage = () => {
           <h1 className="script-page__title">발표 대본 리스트</h1>
 
           <div className="script-page__tab-wrap">
-            <button type="button" className="script-page__tab script-page__tab--active">
+            <button
+              type="button"
+              className="script-page__tab script-page__tab--active"
+            >
               스피치 모드
             </button>
 
@@ -463,10 +469,16 @@ const ScriptPage = () => {
                           </label>
 
                           <div className="script-list-item__actions">
-                            <button type="button" className="script-list-item__action-btn">
+                            <button
+                              type="button"
+                              className="script-list-item__action-btn"
+                            >
                               ↕
                             </button>
-                            <button type="button" className="script-list-item__action-btn">
+                            <button
+                              type="button"
+                              className="script-list-item__action-btn"
+                            >
                               »
                             </button>
                           </div>
@@ -558,7 +570,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.audienceAge === item ? "script-chip--active" : ""
+                          selectedScript.audienceAge === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("audienceAge", item)}
                       >
@@ -574,7 +588,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.audienceLevel === item ? "script-chip--active" : ""
+                          selectedScript.audienceLevel === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("audienceLevel", item)}
                       >
@@ -592,7 +608,9 @@ const ScriptPage = () => {
                         key={item}
                         type="button"
                         className={`script-chip ${
-                          selectedScript.purpose === item ? "script-chip--active" : ""
+                          selectedScript.purpose === item
+                            ? "script-chip--active"
+                            : ""
                         }`}
                         onClick={() => updateSelectedScript("purpose", item)}
                       >
@@ -628,7 +646,9 @@ const ScriptPage = () => {
 
         <div
           className={`script-page__actions ${
-            hasSelectedScript ? "script-page__actions--three-columns" : "script-page__actions--two-columns"
+            hasSelectedScript
+              ? "script-page__actions--three-columns"
+              : "script-page__actions--two-columns"
           }`}
         >
           <div className="script-page__actions-cell script-page__actions-cell--left">
