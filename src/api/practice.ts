@@ -66,16 +66,26 @@ export type StopPracticeResponse = {
 };
 
 export type PracticeAnalysisResult = {
-  avgWpm?: number;
-  avgPitch?: number;
-  avgIntensity?: number;
-  avgZcr?: number;
-  pauseRatio?: number;
-  wpmDiff?: number;
-  pitchDiff?: number;
-  intensityDiff?: number;
-  zcrDiff?: number;
-  pauseCount?: number;
+  wpm?: {
+    avg?: number;
+    diff?: number;
+  };
+  pitch?: {
+    avg?: number;
+    diff?: number;
+  };
+  intensity?: {
+    avg?: number;
+    diff?: number;
+  };
+  zcr?: {
+    avg?: number;
+    diff?: number;
+  };
+  pause?: {
+    ratio?: number;
+    count?: number;
+  };
 };
 
 export type PracticeAiAnalysisResult = {
@@ -102,22 +112,23 @@ export type PracticeIssueResponse = {
 
 export type PracticeSentenceResponse = {
   index: number;
-  text: string;
+  text?: string;
+  originalText?: string;
   startTime?: number;
   endTime?: number;
   status?: string;
 };
 
 export type PracticeReportResponse = {
-  id: number;
+  practiceId: number;
   audioUrl?: string;
   time?: number;
   status?: string;
   audienceType?: AudienceType;
   audienceUnderstanding?: AudienceUnderstanding;
   speechInformation?: SpeechInformation;
-  analysisResult?: PracticeAnalysisResult;
-  aiAnalysisResult?: PracticeAiAnalysisResult;
+  analysis?: PracticeAnalysisResult;
+  aiAnalysis?: PracticeAiAnalysisResult;
   practiceIssues?: PracticeIssueResponse[];
   sentences?: PracticeSentenceResponse[];
 };
