@@ -72,6 +72,39 @@ export type SelectPracticeStyleResponse = {
   contentList: PracticeContentItem[];
 };
 
+export type StartPracticeSentence = {
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  originalText: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+  words: StartPracticeWord[];
+};
+
+export type StartPracticeWord = {
+  scriptWordId: number;
+  scriptSentenceId: number;
+  sentenceIndex: number;
+  globalWordIndex: number;
+  sentenceWordIndex: number;
+  text: string;
+  normalizedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+};
+
+export type StartPracticeResponse = {
+  practiceId: number;
+  title: string;
+  webSocketUrl?: string;
+  status: string;
+  contentList: PracticeContentItem[];
+  sentences: StartPracticeSentence[];
+  scriptWords: StartPracticeWord[];
+  createdAt?: string;
+};
+
 export type StopPracticeResponse = {
   practiceId: number;
   status: "ANALYZING" | "ANALYZED" | string;
@@ -202,7 +235,7 @@ export async function selectPracticeStyle(practiceId: number, styleId: number) {
 }
 
 export async function startPractice(practiceId: number) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
+  const { data } = await api.post<ApiResponse<StartPracticeResponse>>(
     `/api/practices/${practiceId}`,
   );
 
