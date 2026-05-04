@@ -6,6 +6,7 @@ import {
   deleteScript,
   generateScript,
   getScripts,
+  patchScript,
   updateScript,
   type AudienceAgeCode,
   type AudienceLevelCode,
@@ -302,6 +303,10 @@ const ScriptPage = () => {
 
   const saveSelectedScript = async (script: ScriptItem) => {
     if (script.id > 0) {
+      await patchScript(script.id, {
+        title: script.title.trim(),
+        content: script.content.trim(),
+      });
       return script.id;
     }
 
