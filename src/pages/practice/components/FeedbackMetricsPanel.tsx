@@ -92,6 +92,11 @@ export default function FeedbackMetricsPanel({
               </span>
               <strong>{metric.value}</strong>
               <span className="feedback-metric-card__badge">{metric.badge}</span>
+              {metric.feedback && (
+                <span className="feedback-metric-card__feedback" role="status">
+                  {metric.feedback}
+                </span>
+              )}
             </button>
           );
         })}

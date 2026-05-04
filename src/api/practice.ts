@@ -148,20 +148,37 @@ export type PracticeAiAnalysisResult = {
 };
 
 export type PracticeIssueResponse = {
+  scriptSentenceId?: number;
+  sentenceIndex?: number;
+  sentenceText?: string;
   startIndex?: number;
   endIndex?: number;
+  issueType?: string;
   issueSummary?: string;
   feedbackContent?: string;
+  reason?: string;
+  score?: number;
+  displayOrder?: number;
   wpm?: number;
   intensity?: number;
 };
 
 export type PracticeSentenceResponse = {
   index: number;
+  scriptSentenceId?: number;
   text?: string;
   originalText?: string;
   startTime?: number;
   endTime?: number;
+  startMs?: number;
+  endMs?: number;
+  wordCount?: number;
+  skippedWordCount?: number;
+  wpm?: number;
+  pauseDurationMs?: number;
+  avgPitch?: number;
+  avgIntensity?: number;
+  score?: number;
   status?: string;
 };
 
@@ -170,6 +187,7 @@ export type PracticeReportResponse = {
   audioUrl?: string;
   time?: number;
   status?: string;
+  message?: string;
   audienceType?: AudienceType;
   audienceUnderstanding?: AudienceUnderstanding;
   speechInformation?: SpeechInformation;

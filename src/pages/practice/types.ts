@@ -46,6 +46,7 @@ export type FeedbackMetric = {
   label: string;
   value: string;
   badge: string;
+  feedback?: string;
   initial: string;
   tone: "slate" | "amber" | "violet" | "green";
 };
