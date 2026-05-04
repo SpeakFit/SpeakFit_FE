@@ -46,6 +46,18 @@ export type UpdateScriptRequest = GenerateScriptRequest & {
   content: string;
 };
 
+export type PatchScriptRequest = {
+  title: string;
+  content: string;
+};
+
+export type PatchScriptResponse = {
+  id: number;
+  title: string;
+  content: string;
+  updatedAt: string;
+};
+
 export type InputPracticeInfoRequest = {
   audienceType: AudienceAgeCode;
   audienceUnderstanding: AudienceLevelCode;
@@ -95,6 +107,15 @@ export async function updateScript(payload: UpdateScriptRequest) {
   );
 
   return unwrapResponse(data, "스크립트 최적화에 실패했습니다.");
+}
+
+export async function patchScript(scriptId: number, payload: PatchScriptRequest) {
+  const { data } = await api.patch<ApiResponse<PatchScriptResponse>>(
+    `/api/scripts/${scriptId}`,
+    payload
+  );
+
+  return unwrapResponse(data, "대본 수정에 실패했습니다.");
 }
 
 export async function inputPracticeInfo(
