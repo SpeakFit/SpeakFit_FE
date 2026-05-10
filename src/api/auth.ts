@@ -3,6 +3,8 @@ import {
   saveAuthSession as persistAuthSession,
   type StoredUserInfo,
 } from "./authStorage";
+import type { ApiResponse } from "./response";
+import { unwrapResponse } from "./response";
 
 const ACCESS_TOKEN_KEY = "speakfit_access_token";
 const USER_KEY = "speakfit_user";
@@ -43,14 +45,6 @@ export type LoginResponse = {
   accessToken: string;
   user: StoredUserInfo;
 };
-
-function unwrapResponse<T>(response: ApiResponse<T>, fallbackMessage: string) {
-  if (!response.success || !response.result) {
-    throw new Error(response.message || fallbackMessage);
-  }
-
-  return response.result;
-}
 
 export async function signUp(payload: SignUpRequest) {
   const { data } = await api.post<ApiResponse<SignUpResponse>>(

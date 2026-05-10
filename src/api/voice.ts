@@ -41,7 +41,11 @@ export async function uploadVoiceProfileRecording(audioBlob: Blob) {
   const formData = new FormData();
   formData.append("audio", file);
 
-  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData);
+  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   if (!data.success) {
     throw new Error("음성 분석 요청에 실패했습니다.");

@@ -1,56 +1,91 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { SpeechStyleId } from "../types";
+import type { SpeechStyle, StyleType } from "../../../api/practice";
+
+const STYLE_TITLE_BY_TYPE: Record<StyleType, string> = {
+  CALM_LOW_TONE: "차분한 스타일",
+  STANDARD_LECTURE: "지적인 스타일",
+  ENERGETIC_FAST: "열정적인 스타일",
+  DELIVERY: "전달력 있는 스타일",
+};
+
+const STYLE_DISPLAY_ORDER: StyleType[] = [
+  "ENERGETIC_FAST",
+  "STANDARD_LECTURE",
+  "CALM_LOW_TONE",
+  "DELIVERY",
+];
 
 type SpeechStyleOption = {
   id: SpeechStyleId;
+  styleType?: StyleType;
   title: string;
   description: string;
-  badge?: string;
+  sampleAudioUrl?: string;
+  isRecommended: boolean;
 };
 
 type PracticeStyleModalProps = {
-  recommendedStyle?: SpeechStyleId;
+  styles: SpeechStyle[];
+  isLoading: boolean;
+  errorMessage: string | null;
   onPreviewTts?: (styleId: SpeechStyleId) => void;
+  onRetry: () => void;
   onConfirm: (styleId: SpeechStyleId) => void;
 };
 
-const speechStyleOptions: SpeechStyleOption[] = [
-  {
-    id: "passionate",
-    title: "열정적인 스타일",
-    description: "에너지가 느껴지는 전달",
-    badge: "추천",
-  },
-  {
-    id: "intellectual",
-    title: "지적인 스타일",
-    description: "효율적이고 전문적인 전달",
-  },
-  {
-    id: "calm",
-    title: "차분한 스타일",
-    description: "안정적이고 신뢰감이 느껴지는 전달",
-  },
-  {
-    id: "dynamic",
-    title: "전달력 있는 스타일",
-    description: "높낮이 변화와 강조",
-  },
-];
-
 export default function PracticeStyleModal({
-  recommendedStyle = "passionate",
+  styles,
+  isLoading,
+  errorMessage,
   onPreviewTts,
+  onRetry,
   onConfirm,
 }: PracticeStyleModalProps) {
-  const [selectedStyle, setSelectedStyle] =
-    useState<SpeechStyleId>(recommendedStyle);
+  const speechStyleOptions: SpeechStyleOption[] = useMemo(
+    () =>
+      styles
+        .map((style, index) => ({
+          id: style.styleId,
+          styleType: style.styleType,
+          title: style.styleType
+            ? STYLE_TITLE_BY_TYPE[style.styleType]
+            : index === 0
+              ? "추천 스타일"
+              : `스타일 ${index + 1}`,
+          description: style.description,
+          sampleAudioUrl: style.guideAudioUrl ?? style.sampleAudioUrl,
+          isRecommended: style.isRecommended ?? index === 0,
+        }))
+        .sort((a, b) => {
+          if (a.isRecommended !== b.isRecommended) {
+            return Number(b.isRecommended) - Number(a.isRecommended);
+          }
+
+          const aOrder = a.styleType
+            ? STYLE_DISPLAY_ORDER.indexOf(a.styleType)
+            : -1;
+          const bOrder = b.styleType
+            ? STYLE_DISPLAY_ORDER.indexOf(b.styleType)
+            : -1;
+
+          return (aOrder === -1 ? 99 : aOrder) - (bOrder === -1 ? 99 : bOrder);
+        }),
+    [styles],
+  );
+  const [selectedStyle, setSelectedStyle] = useState<SpeechStyleId | null>(
+    null,
+  );
   const recommendedOption =
-    speechStyleOptions.find((option) => option.id === recommendedStyle) ??
+    speechStyleOptions.find((option) => option.isRecommended) ??
     speechStyleOptions[0];
+  const selectedStyleId =
+    selectedStyle !== null &&
+    speechStyleOptions.some((option) => option.id === selectedStyle)
+      ? selectedStyle
+      : recommendedOption?.id ?? null;
 
   const handlePreviewTts = (styleId: SpeechStyleId) => {
-    // TODO: 백엔드 TTS 연동 시 styleId를 기준으로 가이드 음성을 재생
     onPreviewTts?.(styleId);
   };
 
@@ -64,7 +99,9 @@ export default function PracticeStyleModal({
       >
         <div className="practice-modal__header practice-modal__header--style">
           <p>입력하신 스피치 데이터를 바탕으로 추천하는 스타일이에요.</p>
-          <h2 id="practice-style-title">{recommendedOption.title}</h2>
+          <h2 id="practice-style-title">
+            {recommendedOption?.title ?? "스타일을 불러오는 중"}
+          </h2>
         </div>
 
         <div className="practice-style-modal__body">
@@ -73,60 +110,85 @@ export default function PracticeStyleModal({
             <p>스피커 아이콘을 누르면 가이드 TTS를 먼저 들어볼 수 있어요.</p>
           </div>
 
-          <div className="practice-style-grid">
-            {speechStyleOptions.map((option) => {
-              const isSelected = selectedStyle === option.id;
+          {isLoading && (
+            <p className="practice-style-modal__message">
+              스타일을 불러오고 있습니다.
+            </p>
+          )}
 
-              return (
-                <div
-                  key={option.id}
-                  className={`practice-style-card ${
-                    isSelected ? "is-selected" : ""
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className="practice-style-card__speaker"
-                    aria-label={`${option.title} TTS 듣기`}
-                    onClick={() => handlePreviewTts(option.id)}
+          {errorMessage && !isLoading && (
+            <div className="practice-style-modal__error">
+              <p className="practice-style-modal__message is-error">
+                {errorMessage}
+              </p>
+              <button
+                type="button"
+                className="practice-style-modal__retry"
+                onClick={onRetry}
+              >
+                다시 불러오기
+              </button>
+            </div>
+          )}
+
+          {!isLoading && !errorMessage && (
+            <div className="practice-style-grid">
+              {speechStyleOptions.map((option) => {
+                const isSelected = selectedStyleId === option.id;
+
+                return (
+                  <div
+                    key={option.id}
+                    className={`practice-style-card ${
+                      isSelected ? "is-selected" : ""
+                    }`}
                   >
-                    <svg
-                      viewBox="0 0 32 32"
-                      aria-hidden="true"
-                      focusable="false"
+                    <button
+                      type="button"
+                      className="practice-style-card__speaker"
+                      aria-label={`${option.title} TTS 듣기`}
+                      onClick={() => handlePreviewTts(option.id)}
+                      disabled={!option.sampleAudioUrl}
                     >
-                      <path d="M5 12.5h5l7-6v19l-7-6H5z" />
-                      <path d="M21 11.5c2 2.4 2 6.6 0 9" />
-                      <path d="M25 8c3.8 4.4 3.8 11.6 0 16" />
-                    </svg>
-                  </button>
+                      <svg
+                        viewBox="0 0 32 32"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <path d="M5 12.5h5l7-6v19l-7-6H5z" />
+                        <path d="M21 11.5c2 2.4 2 6.6 0 9" />
+                        <path d="M25 8c3.8 4.4 3.8 11.6 0 16" />
+                      </svg>
+                    </button>
 
-                  {option.badge && (
-                    <span className="practice-style-card__badge">
-                      {option.badge}
-                    </span>
-                  )}
+                    {option.isRecommended && (
+                      <span className="practice-style-card__badge">추천</span>
+                    )}
 
-                  <button
-                    type="button"
-                    className="practice-style-card__select"
-                    aria-pressed={isSelected}
-                    onClick={() => setSelectedStyle(option.id)}
-                  >
-                    <strong>{option.title}</strong>
-                    <span>{option.description}</span>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                    <button
+                      type="button"
+                      className="practice-style-card__select"
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedStyle(option.id)}
+                    >
+                      <strong>{option.title}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="practice-style-modal__footer">
           <button
             type="button"
-            className="practice-modal__confirm is-enabled"
-            onClick={() => onConfirm(selectedStyle)}
+            className={`practice-modal__confirm ${
+              selectedStyleId ? "is-enabled" : ""
+            }`}
+            onClick={() => selectedStyleId && onConfirm(selectedStyleId)}
+            disabled={!selectedStyleId}
           >
             연습하러 가기
           </button>

@@ -1,11 +1,6 @@
 import { api } from "./http";
-
-type ApiResponse<T> = {
-  code?: string;
-  message?: string;
-  result?: T;
-  success: boolean;
-};
+import type { ApiResponse } from "./response";
+import { unwrapResponse } from "./response";
 
 export type AudienceAgeCode = "SENIOR" | "ADULT" | "YOUTH" | "CHILD";
 export type AudienceLevelCode = "LOW" | "MIDDLE" | "HIGH";
@@ -20,6 +15,8 @@ export type ScriptResponse = {
   id: number;
   title: string;
   content: string;
+  markedContent?: string;
+  marked_content?: string;
   createdAt?: string;
 };
 
@@ -49,6 +46,18 @@ export type UpdateScriptRequest = GenerateScriptRequest & {
   content: string;
 };
 
+export type PatchScriptRequest = {
+  title: string;
+  content: string;
+};
+
+export type PatchScriptResponse = {
+  id: number;
+  title: string;
+  content: string;
+  updatedAt: string;
+};
+
 export type InputPracticeInfoRequest = {
   audienceType: AudienceAgeCode;
   audienceUnderstanding: AudienceLevelCode;
@@ -56,18 +65,18 @@ export type InputPracticeInfoRequest = {
   targetTime: number;
 };
 
-function unwrapResponse<T>(response: ApiResponse<T>, fallbackMessage: string) {
-  if (!response.success || !response.result) {
-    throw new Error(response.message || fallbackMessage);
-  }
-
-  return response.result;
-}
-
 export async function getScripts() {
   const { data } = await api.get<ApiResponse<ScriptResponse[]>>("/api/scripts");
 
   return unwrapResponse(data, "대본 목록을 불러오지 못했습니다.");
+}
+
+export async function getScript(scriptId: number) {
+  const { data } = await api.get<ApiResponse<ScriptResponse>>(
+    `/api/scripts/${scriptId}`,
+  );
+
+  return unwrapResponse(data, "대본 상세 정보를 불러오지 못했습니다.");
 }
 
 export async function addScript(payload: AddScriptRequest) {
@@ -98,6 +107,15 @@ export async function updateScript(payload: UpdateScriptRequest) {
   );
 
   return unwrapResponse(data, "스크립트 최적화에 실패했습니다.");
+}
+
+export async function patchScript(scriptId: number, payload: PatchScriptRequest) {
+  const { data } = await api.patch<ApiResponse<PatchScriptResponse>>(
+    `/api/scripts/${scriptId}`,
+    payload
+  );
+
+  return unwrapResponse(data, "대본 수정에 실패했습니다.");
 }
 
 export async function inputPracticeInfo(
