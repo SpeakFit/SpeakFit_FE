@@ -8,7 +8,7 @@ export type UploadVoiceProfileResponse = {
 };
 
 const sleep = (ms: number) =>
-  new Promise((resolve) => window.setTimeout(resolve, ms));
+  new Promise((resolve) => setTimeout(resolve, ms));  // window.setTimeout → setTimeout
 
 export async function uploadVoiceProfileRecording(audioBlob: Blob) {
   const endpoint = import.meta.env.VITE_VOICE_PROFILE_ENDPOINT?.trim();
@@ -39,13 +39,10 @@ export async function uploadVoiceProfileRecording(audioBlob: Blob) {
   });
 
   const formData = new FormData();
-  formData.append("audio", file);
+  formData.append("voiceFile", file);  // ← 필드명 변경
 
-  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Content-Type 헤더 제거: axios가 자동으로 boundary 포함해서 설정함
+  const { data } = await api.post<UploadVoiceProfileResponse>(endpoint, formData);
 
   if (!data.success) {
     throw new Error("음성 분석 요청에 실패했습니다.");
