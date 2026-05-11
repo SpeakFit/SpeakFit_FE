@@ -1,10 +1,11 @@
 import "./PracticeHeader.css";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { clearAuthSession, getStoredUser } from "../../../api/auth";
+import { useNavigate, Link } from "react-router-dom";
 import speakfitLogo from "../../../assets/speakfit-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
 import { ROUTES } from "../../../app/routes.const";
+
 
 export default function PracticeHeader() {
   const navigate = useNavigate();
@@ -19,14 +20,16 @@ export default function PracticeHeader() {
   return (
     <header className="practice-header">
       <div className="practice-header__inner">
-        <div className="practice-header__left">
+        
+        {/* LEFT */}
+        <Link to="/" className="practice-header__left" style={{ textDecoration: 'none' }}>
           <img
             src={speakfitLogo}
             alt="Speakfit"
             className="practice-header__logo"
           />
           <span className="practice-header__brand">Speakfit</span>
-        </div>
+        </Link>
 
         <div className="practice-header__right">
           <div className="practice-header__user">

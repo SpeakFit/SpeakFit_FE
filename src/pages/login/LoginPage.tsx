@@ -35,7 +35,7 @@ export default function LoginPage() {
         return;
       }
 
-      navigate(ROUTES.LANDING, { replace: true });
+      navigate(ROUTES.SCRIPT, { replace: true });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인에 실패했습니다.";

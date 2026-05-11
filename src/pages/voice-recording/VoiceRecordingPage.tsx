@@ -101,7 +101,6 @@ export default function VoiceRecordingPage() {
 
   useEffect(() => {
     if (!recordingError) return;
-
     setErrorMessage(recordingError);
     setPageState("default");
   }, [recordingError]);
@@ -257,8 +256,8 @@ export default function VoiceRecordingPage() {
             <p className="voice-recording-card__example-label">예시 문장</p>
 
             <div className="voice-recording-card__example-box">
-              {EXAMPLE_SENTENCE.split("\n").map((line, index) => (
-                <p key={index}>{line}</p>
+              {EXAMPLE_SENTENCE.split("\n").map((line) => (
+                <p key={line}>{line}</p>
               ))}
             </div>
 
@@ -311,7 +310,9 @@ export default function VoiceRecordingPage() {
               </>
             )}
 
-            {(pageState === "recorded" || pageState === "processing") && (
+            {(pageState === "recorded" ||
+              pageState === "processing" ||
+              pageState === "done") && (
               <>
                 <button
                   type="button"

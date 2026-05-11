@@ -5,4 +5,5 @@ export const ROUTES = {
   SCRIPT: "/script",
   VOICE_RECORDING: "/voice-recording",
   PRACTICE: "/practice",
+  FEEDBACK: "/feedback",
 } as const;

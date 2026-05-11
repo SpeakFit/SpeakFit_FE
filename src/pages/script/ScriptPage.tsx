@@ -6,6 +6,7 @@ import {
   deleteScript,
   generateScript,
   getScripts,
+  patchScript,
   updateScript,
   type AudienceAgeCode,
   type AudienceLevelCode,
@@ -14,7 +15,6 @@ import {
   type SpeechTypeCode,
 } from "../../api/scripts";
 import type { PracticeRouteState } from "../practice/types";
-
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
@@ -95,6 +95,10 @@ const mapScriptResponse = (script: ScriptResponse): ScriptItem => ({
 
 const getErrorMessage = (error: unknown, fallbackMessage: string) => {
   if (error instanceof Error) {
+    if (error.message === "Network Error") {
+      return "서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요.";
+    }
+
     return error.message || fallbackMessage;
   }
 
@@ -135,6 +139,7 @@ const ScriptPage = () => {
   const hasSelectedScript = !!selectedScript;
   const selectedContent = getScriptContent(selectedScript);
   const hasContent = !!selectedContent.trim();
+  const canStartPractice = hasSelectedScript && hasContent;
 
   const isActionEnabled = !!(
     selectedScript &&
@@ -298,6 +303,10 @@ const ScriptPage = () => {
 
   const saveSelectedScript = async (script: ScriptItem) => {
     if (script.id > 0) {
+      await patchScript(script.id, {
+        title: script.title.trim(),
+        content: script.content.trim(),
+      });
       return script.id;
     }
 
@@ -328,30 +337,36 @@ const ScriptPage = () => {
 
       applyGeneratedScript(getGeneratedContent(updatedScript));
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "스크립트 요청에 실패했습니다."));
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          hasContent
+            ? "스크립트 최적화에 실패했습니다. 생성된 대본으로 발표 연습을 시작할 수 있어요."
+            : "스크립트 생성에 실패했습니다."
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleStartPractice = async () => {
-    if (!selectedScript) return;
+    if (!selectedScript || !canStartPractice) return;
 
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
-      const payload = buildAiPayload(selectedScript);
-      await saveSelectedScript(selectedScript);
-
+      const scriptId = await saveSelectedScript(selectedScript);
       const practiceState: PracticeRouteState = {
+        scriptId,
         scriptTitle: selectedScript.title.trim(),
         scriptContent: selectedContent.trim(),
         introForm: {
           audienceAge: selectedScript.audienceAge,
           audienceKnowledge: selectedScript.audienceLevel,
           speechType: selectedScript.purpose,
-          duration: String(payload.time),
+          duration: selectedScript.duration.trim(),
         },
       };
 
@@ -661,10 +676,10 @@ const ScriptPage = () => {
               <button
                 type="button"
                 className="script-page__start-btn"
-                disabled={isSubmitting || !hasContent || !isActionEnabled}
+                disabled={isSubmitting || !canStartPractice}
                 onClick={handleStartPractice}
               >
-                발표 연습 시작하기
+                {isSubmitting ? "처리 중..." : "발표 연습 시작하기"}
               </button>
             )}
           </div>

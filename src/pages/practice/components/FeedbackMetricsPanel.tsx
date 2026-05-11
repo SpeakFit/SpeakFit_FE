@@ -1,69 +1,25 @@
-import type { FeedbackMetricId } from "../types";
-
-type FeedbackMetric = {
-  id: FeedbackMetricId;
-  label: string;
-  value: string;
-  badge: string;
-  initial: string;
-  tone: "slate" | "amber" | "violet" | "green";
-};
+import type { FeedbackMetric, FeedbackMetricId } from "../types";
 
 type FeedbackMetricsPanelProps = {
   activeMetricId: FeedbackMetricId | null;
+  goalPercent: number;
+  metrics: FeedbackMetric[];
+  summary: string;
+  tip: string;
   onSelectMetric: (metricId: FeedbackMetricId) => void;
 };
 
-const feedbackMetrics: FeedbackMetric[] = [
-  {
-    id: "speech-rate",
-    label: "발화 속도",
-    value: "조금 느림",
-    badge: "90wpm",
-    initial: "S",
-    tone: "slate",
-  },
-  {
-    id: "voice-energy",
-    label: "음성 에너지",
-    value: "낮음",
-    badge: "에너지 부족",
-    initial: "E",
-    tone: "amber",
-  },
-  {
-    id: "pause",
-    label: "멈춤 구간",
-    value: "주의",
-    badge: "2초+ 멈춤",
-    initial: "P",
-    tone: "amber",
-  },
-  {
-    id: "emphasis",
-    label: "강조 표현",
-    value: "낮음",
-    badge: "강조 부족",
-    initial: "M",
-    tone: "violet",
-  },
-  {
-    id: "clarity",
-    label: "발음 명료도",
-    value: "불명확",
-    badge: "ZCR 0.08",
-    initial: "M",
-    tone: "green",
-  },
-];
-
 export default function FeedbackMetricsPanel({
   activeMetricId,
+  goalPercent,
+  metrics,
+  summary,
+  tip,
   onSelectMetric,
 }: FeedbackMetricsPanelProps) {
-  const goalPercent = 67;
+  const safeGoalPercent = Math.min(100, Math.max(0, goalPercent));
   const circumference = Math.PI * 84;
-  const strokeOffset = circumference - (goalPercent / 100) * circumference;
+  const strokeOffset = circumference - (safeGoalPercent / 100) * circumference;
 
   return (
     <aside className="feedback-metrics-panel">
@@ -99,21 +55,22 @@ export default function FeedbackMetricsPanel({
           </svg>
           <div>
             <span>목표치</span>
-            <strong>{goalPercent}%</strong>
+            <strong>{safeGoalPercent}%</strong>
           </div>
         </div>
 
         <p>
-          전반적으로 안정적인 발화였지만,
-          <br />
-          강조 표현과 발음 명료도가 부족해 전달력이
-          <br />
-          다소 약하게 느껴졌습니다.
+          {summary.split("\n").map((line, i) => (
+            <span key={i}>
+              {line}
+              <br />
+            </span>
+          ))}
         </p>
       </section>
 
       <div className="feedback-metric-grid">
-        {feedbackMetrics.map((metric) => {
+        {metrics.map((metric) => {
           const isActive = activeMetricId === metric.id;
 
           return (
@@ -135,16 +92,18 @@ export default function FeedbackMetricsPanel({
               </span>
               <strong>{metric.value}</strong>
               <span className="feedback-metric-card__badge">{metric.badge}</span>
+              {metric.feedback && (
+                <span className="feedback-metric-card__feedback" role="status">
+                  {metric.feedback}
+                </span>
+              )}
             </button>
           );
         })}
 
         <div className="feedback-tip-card">
           <span className="feedback-tip-card__label">TIP</span>
-          <p>
-            핵심 키워드를 더 강조하고 문장 끝에서 짧게 멈추면 전달력이
-            좋아집니다.
-          </p>
+          <p>{tip}</p>
         </div>
       </div>
     </aside>
