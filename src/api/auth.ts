@@ -34,7 +34,7 @@ export type LoginRequest = {
   password: string;
 };
 
-type LoginResponse = {
+export type LoginResponse = {
   accessToken: string;
   user: StoredUserInfo;
 };
@@ -62,8 +62,7 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
 }
 
 export function getStoredUser(): StoredUserInfo | null {
-  const raw =
-    localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
+  const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
 
   if (!raw) {
     return null;
@@ -94,9 +93,7 @@ export function hasSeenVoiceOnboarding() {
     return false;
   }
 
-  return (
-    localStorage.getItem(getVoiceOnboardingSeenKey(user.userId)) === "true"
-  );
+  return localStorage.getItem(getVoiceOnboardingSeenKey(user.userId)) === "true";
 }
 
 export function markVoiceOnboardingSeen() {

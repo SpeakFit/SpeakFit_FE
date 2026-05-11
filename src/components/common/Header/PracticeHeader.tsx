@@ -1,10 +1,11 @@
 import "./PracticeHeader.css";
 import { useMemo } from "react";
+import { clearAuthSession, getStoredUser } from "../../../api/auth";
 import { useNavigate, Link } from "react-router-dom";
 import speakfitLogo from "../../../assets/speakfit-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
 import { ROUTES } from "../../../app/routes.const";
-import { clearAuthSession, getStoredUser } from "../../../api/auth";
+
 
 export default function PracticeHeader() {
   const navigate = useNavigate();
