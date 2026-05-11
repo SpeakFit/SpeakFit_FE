@@ -10,13 +10,6 @@ const ACCESS_TOKEN_KEY = "speakfit_access_token";
 const USER_KEY = "speakfit_user";
 const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
 
-type ApiResponse<T> = {
-  code?: string;
-  message?: string;
-  result?: T;
-  success: boolean;
-};
-
 export type SignUpRequest = {
   email: string;
   birthday: string;
