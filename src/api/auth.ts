@@ -1,13 +1,13 @@
 import { api } from "./http";
 import {
+  clearAuthSession as clearStoredAuthSession,
+  getStoredUser as getStoredAuthUser,
   saveAuthSession as persistAuthSession,
   type StoredUserInfo,
 } from "./authStorage";
 import type { ApiResponse } from "./response";
 import { unwrapResponse } from "./response";
 
-const ACCESS_TOKEN_KEY = "speakfit_access_token";
-const USER_KEY = "speakfit_user";
 const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
 
 export type SignUpRequest = {
@@ -62,24 +62,11 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
 }
 
 export function getStoredUser(): StoredUserInfo | null {
-  const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as StoredUserInfo;
-  } catch {
-    return null;
-  }
+  return getStoredAuthUser();
 }
 
 export function clearAuthSession() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(USER_KEY);
+  clearStoredAuthSession();
 }
 
 function getVoiceOnboardingSeenKey(userId: number) {

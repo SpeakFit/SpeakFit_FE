@@ -34,6 +34,7 @@
 
 .landing-header__actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
 }
@@ -49,11 +50,16 @@
   font-weight: 700;
 }
 
-
-
-.landing-header__actions {
-  display: flex;
-  gap: 10px;
+.landing-header__user {
+  color: var(--color-text);
+  display: inline-block;
+  flex-shrink: 1;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: min(28vw, 12rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
