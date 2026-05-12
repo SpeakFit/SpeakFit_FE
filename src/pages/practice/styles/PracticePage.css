@@ -131,7 +131,11 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background:
-    linear-gradient(180deg, rgba(244, 248, 252, 0.82) 0%, rgba(255, 255, 255, 0) 36px),
+    linear-gradient(
+      180deg,
+      rgba(244, 248, 252, 0.82) 0%,
+      rgba(255, 255, 255, 0) 36px
+    ),
     #ffffff;
 }
 
@@ -148,9 +152,10 @@
 .script-panel__word {
   display: inline;
   color: #202938; /* 읽기 전: 본문과 동일한 색상으로 일관성 유지 */
-  transition: background-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
-              color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-              box-shadow 0.4s ease;
+  transition:
+    background-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.4s ease;
   margin-right: 0.25em;
   word-break: keep-all;
   border-radius: 6px;
@@ -531,7 +536,9 @@
   box-shadow: 0 18px 46px rgba(20, 28, 43, 0.22);
   z-index: 1000;
   white-space: normal;
-  transition: opacity 0.14s ease, visibility 0.14s ease;
+  transition:
+    opacity 0.14s ease,
+    visibility 0.14s ease;
 }
 
 .feedback-script-popover.is-visible {
@@ -681,6 +688,7 @@
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 
@@ -795,7 +803,9 @@
   box-shadow: 0 14px 34px rgba(25, 34, 50, 0.18);
   z-index: 20;
   word-break: keep-all;
-  transition: opacity 0.14s ease, visibility 0.14s ease;
+  transition:
+    opacity 0.14s ease,
+    visibility 0.14s ease;
 }
 
 .feedback-metric-card:hover .feedback-metric-card__feedback,
@@ -890,6 +900,7 @@
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
 }
 
