@@ -30,7 +30,7 @@ export default function HeroSection() {
                 className="btn btn-primary hero__primary-btn"
                 to={ROUTES.SCRIPT}
               >
-                연습 시작
+                발표 연습 시작하기
               </Link>
             </div>
           )}
