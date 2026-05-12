@@ -52,8 +52,13 @@
 
 .landing-header__user {
   color: var(--color-text);
+  display: inline-block;
+  flex-shrink: 1;
   font-size: 14px;
   font-weight: 600;
+  max-width: min(28vw, 12rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
