@@ -34,6 +34,7 @@
 
 .landing-header__actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
 }
@@ -49,11 +50,11 @@
   font-weight: 700;
 }
 
-
-
-.landing-header__actions {
-  display: flex;
-  gap: 10px;
+.landing-header__user {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

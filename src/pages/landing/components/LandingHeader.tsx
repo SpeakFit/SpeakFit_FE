@@ -1,10 +1,20 @@
 import Container from "../../../components/Container";
 import "../styles/header.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../app/routes.const";
+import { clearAuthSession, getStoredUser } from "../../../api/auth";
 import speakfitLogo from "../../../assets/speakfit-logo.png";
 
 export default function LandingHeader() {
+  const navigate = useNavigate();
+  const user = getStoredUser();
+  const displayName = user?.nickname?.trim() || "사용자";
+
+  const handleLogout = () => {
+    clearAuthSession();
+    navigate(ROUTES.LOGIN, { replace: true });
+  };
+
   return (
     <header className="landing-header">
       <Container className="landing-header__inner">
@@ -21,12 +31,30 @@ export default function LandingHeader() {
         </nav>
 
         <div className="landing-header__actions">
-          <Link className="btn btn-ghost" to={ROUTES.LOGIN}>
-            로그인
-          </Link>
-          <Link className="btn btn-primary" to={ROUTES.SIGNUP}>
-            회원가입
-          </Link>
+          {user ? (
+            <>
+              <span className="landing-header__user">{displayName}님</span>
+              <Link className="btn btn-primary" to={ROUTES.SCRIPT}>
+                연습 시작
+              </Link>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleLogout}
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              <Link className="btn btn-ghost" to={ROUTES.LOGIN}>
+                로그인
+              </Link>
+              <Link className="btn btn-primary" to={ROUTES.SIGNUP}>
+                회원가입
+              </Link>
+            </>
+          )}
         </div>
       </Container>
     </header>
