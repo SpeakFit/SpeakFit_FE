@@ -31,11 +31,6 @@ export async function uploadVoiceProfileRecording(audioBlob: Blob) {
   const { data } = await api.post<ApiResponse<UploadVoiceProfileResponse>>(
     "/api/voice-analysis",
     formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    },
   );
 
   return unwrapResponse(data, "음성 분석 요청에 실패했습니다.");
