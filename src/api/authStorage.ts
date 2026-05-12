@@ -8,6 +8,12 @@ export type StoredUserInfo = {
   birthday?: string;
   gender?: string;
   dialect?: string;
+  defaultPitch?: number | null;
+  defaultWpm?: number | null;
+  defaultVoice?: {
+    defaultPitch?: number | null;
+    defaultWpm?: number | null;
+  } | null;
 };
 
 const getStoragePair = () => [localStorage, sessionStorage] as const;
@@ -82,6 +88,12 @@ export function saveAuthSession(
   otherStorage.removeItem(USER_KEY);
 
   storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  storage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function updateStoredUser(user: StoredUserInfo) {
+  const storage = localStorage.getItem(USER_KEY) ? localStorage : sessionStorage;
+
   storage.setItem(USER_KEY, JSON.stringify(user));
 }
 

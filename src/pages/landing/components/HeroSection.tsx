@@ -1,12 +1,14 @@
 import Container from "../../../components/Container";
 import "../styles/hero.css";
 import { Link } from "react-router-dom";
-import { getStoredUser } from "../../../api/auth";
+import { getStoredUser, needsVoiceOnboarding } from "../../../api/auth";
 import { ROUTES } from "../../../app/routes.const";
 import heroImage from "../../../assets/hero-image.png";
 
 export default function HeroSection() {
   const user = getStoredUser();
+  const practiceStartRoute =
+    user && needsVoiceOnboarding(user) ? ROUTES.VOICE_RECORDING : ROUTES.SCRIPT;
 
   return (
     <section className="hero">
@@ -28,7 +30,7 @@ export default function HeroSection() {
             <div className="hero__actions">
               <Link
                 className="btn hero__primary-btn"
-                to={ROUTES.SCRIPT}
+                to={practiceStartRoute}
               >
                 발표 연습 시작하기
               </Link>

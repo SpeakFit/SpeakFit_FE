@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../app/routes.const";
-import { getStoredUser, markVoiceOnboardingSeen } from "../../api/auth";
+import { getStoredUser, saveVoiceOnboardingResult } from "../../api/auth";
 import { uploadVoiceProfileRecording } from "../../api/voice";
 import PracticeHeader from "../../components/common/Header/PracticeHeader";
 import useAudioMeter from "../practice/hooks/useAudioMeter";
@@ -84,10 +84,6 @@ export default function VoiceRecordingPage() {
       doneTimeoutRef.current = null;
     }
   };
-
-  useEffect(() => {
-    markVoiceOnboardingSeen();
-  }, []);
 
   useEffect(() => {
     if (status !== "recording") return;
@@ -181,7 +177,8 @@ export default function VoiceRecordingPage() {
         throw new Error("분석할 녹음 파일이 없어요. 다시 녹음해주세요.");
       }
 
-      await uploadVoiceProfileRecording(audioBlob);
+      const result = await uploadVoiceProfileRecording(audioBlob);
+      saveVoiceOnboardingResult(result);
 
       clearProgressTimer();
       setProgress(100);
