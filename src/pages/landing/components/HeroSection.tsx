@@ -1,8 +1,13 @@
 import Container from "../../../components/Container";
 import "../styles/hero.css";
+import { Link } from "react-router-dom";
+import { getStoredUser } from "../../../api/auth";
+import { ROUTES } from "../../../app/routes.const";
 import heroImage from "../../../assets/hero-image.png";
 
 export default function HeroSection() {
+  const user = getStoredUser();
+
   return (
     <section className="hero">
       <Container>
@@ -10,10 +15,25 @@ export default function HeroSection() {
           <h1 className="hero__title">
             어떤 무대에서도 당당하게, SpeakFit과 함께
           </h1>
-          <p className="hero__description">
+          <p
+            className={`hero__description${
+              user ? "" : " hero__description--spaced"
+            }`}
+          >
             AI 기반 발표 분석으로 당신의 발표를 객관적으로 진단하고, 더 나은
             발표를 위한 개선점을 제공합니다.
           </p>
+
+          {user && (
+            <div className="hero__actions">
+              <Link
+                className="btn btn-primary hero__primary-btn"
+                to={ROUTES.SCRIPT}
+              >
+                연습 시작
+              </Link>
+            </div>
+          )}
         </div>
         <div className="hero__image">
           <img src={heroImage} alt="SpeakFit 발표 분석 서비스" />

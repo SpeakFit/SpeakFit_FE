@@ -34,9 +34,6 @@ export default function LandingHeader() {
           {user ? (
             <>
               <span className="landing-header__user">{displayName}님</span>
-              <Link className="btn btn-primary" to={ROUTES.SCRIPT}>
-                연습 시작
-              </Link>
               <button
                 type="button"
                 className="btn btn-ghost"
