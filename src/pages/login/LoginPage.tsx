@@ -2,8 +2,8 @@ import "./styles/login.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  hasSeenVoiceOnboarding,
   login,
+  needsVoiceOnboarding,
   saveAuthSession,
 } from "../../api/auth";
 import { ROUTES } from "../../app/routes.const";
@@ -30,7 +30,7 @@ export default function LoginPage() {
       const auth = await login({ email, password });
       saveAuthSession(auth, keepLogin);
 
-      if (!hasSeenVoiceOnboarding()) {
+      if (needsVoiceOnboarding(auth.user)) {
         navigate(ROUTES.VOICE_RECORDING, { replace: true });
         return;
       }

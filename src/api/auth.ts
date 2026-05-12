@@ -3,8 +3,10 @@ import {
   clearAuthSession as clearStoredAuthSession,
   getStoredUser as getStoredAuthUser,
   saveAuthSession as persistAuthSession,
+  updateStoredUser,
   type StoredUserInfo,
 } from "./authStorage";
+import type { UploadVoiceProfileResponse } from "./voice";
 import type { ApiResponse } from "./response";
 import { unwrapResponse } from "./response";
 
@@ -63,6 +65,49 @@ export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
 
 export function getStoredUser(): StoredUserInfo | null {
   return getStoredAuthUser();
+}
+
+function isValidVoiceMetric(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+export function hasDefaultVoice(user: StoredUserInfo | null) {
+  if (!user) {
+    return false;
+  }
+
+  return (
+    isValidVoiceMetric(user.defaultPitch) &&
+    isValidVoiceMetric(user.defaultWpm)
+  ) || (
+    isValidVoiceMetric(user.defaultVoice?.defaultPitch) &&
+    isValidVoiceMetric(user.defaultVoice?.defaultWpm)
+  );
+}
+
+export function needsVoiceOnboarding(user: StoredUserInfo | null) {
+  return !hasDefaultVoice(user);
+}
+
+export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
+  const user = getStoredUser();
+  const defaultPitch = result.userAverageMetrics?.avgPitch;
+  const defaultWpm = result.userAverageMetrics?.avgWPM;
+
+  if (!user || !isValidVoiceMetric(defaultPitch) || !isValidVoiceMetric(defaultWpm)) {
+    return;
+  }
+
+  updateStoredUser({
+    ...user,
+    defaultPitch,
+    defaultWpm,
+    defaultVoice: {
+      ...user.defaultVoice,
+      defaultPitch,
+      defaultWpm,
+    },
+  });
 }
 
 export function clearAuthSession() {
