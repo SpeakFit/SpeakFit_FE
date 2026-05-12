@@ -27,7 +27,7 @@ export default function HeroSection() {
           {user && (
             <div className="hero__actions">
               <Link
-                className="btn btn-primary hero__primary-btn"
+                className="btn hero__primary-btn"
                 to={ROUTES.SCRIPT}
               >
                 발표 연습 시작하기
