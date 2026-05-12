@@ -2,9 +2,11 @@ import { api } from "./http";
 import type { ApiResponse } from "./response";
 import { unwrapResponse } from "./response";
 
+export type VoiceStatus = "COMPLETED" | "PROCESSING" | "FAILED";
+
 export type UploadVoiceProfileResponse = {
   analysisId: number;
-  status: "COMPLETED" | "PROCESSING" | "FAILED" | string;
+  status: VoiceStatus;
   progress?: number;
   voiceStyle?: {
     mostSimilarStyle?: string;
