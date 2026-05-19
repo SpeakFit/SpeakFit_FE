@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
+import PresentationDeckPanel from "./components/PresentationDeckPanel";
 import MetricCard from "../../components/common/MetricCard/MetricCard";
 import RecordButton from "./components/RecordButton";
 import FeedbackMetricsPanel from "./components/FeedbackMetricsPanel";
@@ -500,10 +501,16 @@ export default function PracticePage() {
   const [isFetchingReport, setIsFetchingReport] = useState(false);
   const [feedbackReport, setFeedbackReport] =
     useState<PracticeFeedbackReport | null>(null);
+  const [presentationFile, setPresentationFile] = useState<File | null>(null);
+  const [presentationObjectUrl, setPresentationObjectUrl] = useState<string | null>(null);
+  const [presentationS3Url, setPresentationS3Url] = useState("");
+  const [presentationCurrentPage, setPresentationCurrentPage] = useState(1);
+  const [presentationTotalPages, setPresentationTotalPages] = useState(1);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const reportRequestedRef = useRef(false);
   const reportPollTokenRef = useRef(0);
   const realtime = usePracticeRealtime();
+  const isPresentationMode = activeTab === "프레젠테이션 모드";
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -537,6 +544,18 @@ export default function PracticePage() {
       previewAudioRef.current?.pause();
     };
   }, []);
+
+  useEffect(() => {
+    if (!presentationFile) {
+      setPresentationObjectUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(presentationFile);
+    setPresentationObjectUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [presentationFile]);
 
   useEffect(() => {
     if (!scriptId) return;
@@ -733,6 +752,11 @@ export default function PracticePage() {
       return;
     }
 
+    if (isPresentationMode && (!presentationFile || !presentationS3Url.trim())) {
+      setPracticeError("프레젠테이션 파일과 S3 저장소 URL을 입력해 주세요.");
+      return;
+    }
+
     setPracticeError(null);
     setAnalysisStatusMessage(null);
     setFeedbackReport(null);
@@ -887,7 +911,7 @@ export default function PracticePage() {
         <section
           className={`practice-page__main-grid ${
             stage === "record-finished" ? "practice-page__main-grid--feedback" : ""
-          }`}
+          } ${isPresentationMode ? "practice-page__main-grid--presentation" : ""}`}
         >
           {stage === "record-finished" ? (
             <>
@@ -908,42 +932,79 @@ export default function PracticePage() {
             </>
           ) : (
             <>
-              <ScriptPanel
-                title={practiceTitle}
-                script={practiceScript}
-                markedScript={markedScript}
-                sentences={practiceSentences}
-                contentList={practiceContent}
-                lastReadIndex={realtime.lastReadIndex}
-                wordFeedbackByIndex={realtime.wordFeedbackByIndex}
-                time={formattedTime}
-                isRecording={isRecording}
-                statusText={recordingStatusText}
-                isReadingMarksEnabled={isReadingMarksEnabled}
-                realtimeHighlight={realtime.highlight}
-                realtimeTranscript={realtime.transcript}
-                onToggleReadingMarks={setIsReadingMarksEnabled}
-              />
+              {isPresentationMode ? (
+                <>
+                  <PresentationDeckPanel
+                    file={presentationFile}
+                    objectUrl={presentationObjectUrl}
+                    s3Url={presentationS3Url}
+                    currentPage={presentationCurrentPage}
+                    totalPages={presentationTotalPages}
+                    onFileChange={setPresentationFile}
+                    onS3UrlChange={setPresentationS3Url}
+                    onCurrentPageChange={setPresentationCurrentPage}
+                    onTotalPagesChange={setPresentationTotalPages}
+                  />
 
-              <div className="practice-page__right-column">
-                <MetricCard
-                  title="발화 속도"
-                  value={speechRateDisplay}
-                  unit="WPM"
-                  description="녹음 중 실시간 발화 속도가 표시됩니다."
-                  tone="mint"
-                  level={speechRateLevel}
-                />
+                  <div className="practice-page__script-column">
+                    <ScriptPanel
+                      title={practiceTitle}
+                      script={practiceScript}
+                      markedScript={markedScript}
+                      sentences={practiceSentences}
+                      contentList={practiceContent}
+                      lastReadIndex={realtime.lastReadIndex}
+                      wordFeedbackByIndex={realtime.wordFeedbackByIndex}
+                      time={formattedTime}
+                      isRecording={isRecording}
+                      statusText={recordingStatusText}
+                      isReadingMarksEnabled={isReadingMarksEnabled}
+                      realtimeHighlight={realtime.highlight}
+                      realtimeTranscript={realtime.transcript}
+                      onToggleReadingMarks={setIsReadingMarksEnabled}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ScriptPanel
+                    title={practiceTitle}
+                    script={practiceScript}
+                    markedScript={markedScript}
+                    sentences={practiceSentences}
+                    contentList={practiceContent}
+                    lastReadIndex={realtime.lastReadIndex}
+                    wordFeedbackByIndex={realtime.wordFeedbackByIndex}
+                    time={formattedTime}
+                    isRecording={isRecording}
+                    statusText={recordingStatusText}
+                    isReadingMarksEnabled={isReadingMarksEnabled}
+                    realtimeHighlight={realtime.highlight}
+                    realtimeTranscript={realtime.transcript}
+                    onToggleReadingMarks={setIsReadingMarksEnabled}
+                  />
 
-                <MetricCard
-                  title="목소리 크기"
-                  value={String(volumeLevel)}
-                  unit="dB"
-                  description="녹음 중 실시간으로 표시됩니다."
-                  tone="red"
-                  level={volumeLevel}
-                />
-              </div>
+                  <div className="practice-page__right-column">
+                    <MetricCard
+                      title="발화 속도"
+                      value={speechRateDisplay}
+                      unit="WPM"
+                      description="녹음 중 실시간 발화 속도가 표시됩니다."
+                      tone="mint"
+                      level={speechRateLevel}
+                    />
+
+                    <MetricCard
+                      title="목소리 크기"
+                      value={String(volumeLevel)}
+                      unit="dB"
+                      description="녹음 중 실시간으로 표시됩니다."
+                      tone="red"
+                      level={volumeLevel}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
         </section>

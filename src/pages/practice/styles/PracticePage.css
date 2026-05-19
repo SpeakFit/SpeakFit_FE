@@ -49,11 +49,216 @@
   align-items: start;
 }
 
+.practice-page__main-grid--presentation {
+  grid-template-columns: minmax(520px, 1.35fr) minmax(360px, 0.95fr);
+  gap: 32px;
+  align-items: stretch;
+}
+
 .practice-page__right-column {
   display: flex;
   flex-direction: column;
   gap: 28px;
   height: 100%;
+}
+
+.practice-page__script-column {
+  min-width: 0;
+}
+
+.practice-page__script-column .script-panel {
+  height: 720px;
+  min-height: 720px;
+  border-radius: 12px;
+}
+
+.practice-page__script-column .script-panel__header {
+  min-height: 50px;
+  padding: 14px 24px 12px;
+}
+
+.practice-page__script-column .script-panel__body {
+  padding: 28px 36px 34px;
+}
+
+.practice-page__script-column .script-panel__paragraph {
+  font-size: 25px;
+  line-height: 1.54;
+  margin-bottom: 30px;
+}
+
+.practice-page__script-column .script-panel__footer {
+  padding: 12px 24px;
+}
+
+.presentation-deck {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 720px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #edf1f4;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(72, 85, 106, 0.1);
+}
+
+.presentation-deck__header {
+  min-height: 50px;
+  padding: 14px 28px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #606874;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__title,
+.presentation-deck__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__title {
+  font-weight: 700;
+}
+
+.presentation-deck__meta {
+  color: #9aa3af;
+}
+
+.presentation-deck__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 38px 44px;
+  background: #fff;
+}
+
+.presentation-deck__empty,
+.presentation-deck__ppt-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 340px;
+  color: #8a93a3;
+  text-align: center;
+}
+
+.presentation-deck__upload,
+.presentation-deck__secondary {
+  height: 46px;
+  border: none;
+  border-radius: 6px;
+  padding: 0 28px;
+  background: #55c9b8;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.presentation-deck__secondary {
+  background: #202938;
+}
+
+.presentation-deck__empty p,
+.presentation-deck__ppt-preview span {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.presentation-deck__ppt-preview strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #202938;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__preview {
+  width: 100%;
+  height: 100%;
+  min-height: 430px;
+  border: none;
+  border-radius: 10px;
+  background: #f4f6f8;
+}
+
+.presentation-deck__config {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
+  gap: 14px;
+  padding: 0 28px 18px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.presentation-deck__field span {
+  color: #7a838f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.presentation-deck__field input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  border: 1px solid #dde4ec;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #202938;
+  font-size: 14px;
+}
+
+.presentation-deck__field--pages input {
+  text-align: center;
+}
+
+.presentation-deck__footer {
+  min-height: 58px;
+  border-top: 1px solid #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  color: #606874;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__nav {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #606874;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.presentation-deck__nav:disabled {
+  color: #c8ced6;
+  cursor: not-allowed;
 }
 
 .script-panel {
@@ -1376,6 +1581,31 @@
 }
 
 @media (max-width: 900px) {
+  .practice-page__content {
+    padding: 28px 20px 36px;
+  }
+
+  .practice-page__title {
+    font-size: 40px;
+  }
+
+  .practice-page__main-grid,
+  .practice-page__main-grid--presentation,
+  .practice-page__main-grid--feedback {
+    grid-template-columns: 1fr;
+  }
+
+  .presentation-deck,
+  .practice-page__script-column .script-panel,
+  .script-panel {
+    height: auto;
+    min-height: 560px;
+  }
+
+  .presentation-deck__config {
+    grid-template-columns: 1fr;
+  }
+
   .practice-modal {
     max-width: 92vw;
     border-radius: 24px;
