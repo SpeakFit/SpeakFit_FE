@@ -22,7 +22,7 @@ export default function PracticeHeader() {
       <div className="practice-header__inner">
         
         {/* LEFT */}
-        <Link to="/" className="practice-header__left" style={{ textDecoration: 'none' }}>
+        <Link to={ROUTES.LANDING} className="practice-header__left" style={{ textDecoration: 'none' }}>
           <img
             src={speakfitLogo}
             alt="Speakfit"
@@ -32,18 +32,26 @@ export default function PracticeHeader() {
         </Link>
 
         <div className="practice-header__right">
-          <div className="practice-header__user">
-            <img src={userIcon} alt="user" />
-            <span>{displayName}</span>
-          </div>
+          {user ? (
+            <>
+              <div className="practice-header__user">
+                <img src={userIcon} alt="user" />
+                <span>{displayName}</span>
+              </div>
 
-          <button
-            type="button"
-            className="practice-header__logout"
-            onClick={handleLogout}
-          >
-            로그아웃
-          </button>
+              <button
+                type="button"
+                className="practice-header__logout"
+                onClick={handleLogout}
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <Link className="practice-header__logout" to={ROUTES.LOGIN}>
+              로그인
+            </Link>
+          )}
         </div>
       </div>
     </header>
