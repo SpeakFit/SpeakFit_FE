@@ -77,9 +77,6 @@ export function hasDefaultVoice(user: StoredUserInfo | null) {
   }
 
   return (
-    isValidVoiceMetric(user.defaultPitch) &&
-    isValidVoiceMetric(user.defaultWpm)
-  ) || (
     isValidVoiceMetric(user.defaultVoice?.defaultPitch) &&
     isValidVoiceMetric(user.defaultVoice?.defaultWpm)
   );
@@ -100,8 +97,6 @@ export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
 
   updateStoredUser({
     ...user,
-    defaultPitch,
-    defaultWpm,
     defaultVoice: {
       ...user.defaultVoice,
       defaultPitch,
