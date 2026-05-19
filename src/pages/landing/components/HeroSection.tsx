@@ -7,8 +7,10 @@ import heroImage from "../../../assets/hero-image.png";
 
 export default function HeroSection() {
   const user = getStoredUser();
+  const voiceOnboardingRequired =
+    user?.voiceOnboardingRequired ?? needsVoiceOnboarding(user);
   const practiceStartRoute =
-    user && needsVoiceOnboarding(user) ? ROUTES.VOICE_RECORDING : ROUTES.SCRIPT;
+    user && voiceOnboardingRequired ? ROUTES.VOICE_RECORDING : ROUTES.SCRIPT;
 
   return (
     <section className="hero">

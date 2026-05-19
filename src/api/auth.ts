@@ -59,10 +59,6 @@ export async function login(payload: LoginRequest) {
   return unwrapResponse(data, "로그인에 실패했습니다.");
 }
 
-export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
-  persistAuthSession(auth.accessToken, auth.user, keepLogin);
-}
-
 export function getStoredUser(): StoredUserInfo | null {
   return getStoredAuthUser();
 }
@@ -86,6 +82,21 @@ export function needsVoiceOnboarding(user: StoredUserInfo | null) {
   return !hasDefaultVoice(user);
 }
 
+function withVoiceOnboardingStatus(user: StoredUserInfo): StoredUserInfo {
+  return {
+    ...user,
+    voiceOnboardingRequired: needsVoiceOnboarding(user),
+  };
+}
+
+export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
+  persistAuthSession(
+    auth.accessToken,
+    withVoiceOnboardingStatus(auth.user),
+    keepLogin
+  );
+}
+
 export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
   const user = getStoredUser();
   const defaultPitch = result.userAverageMetrics?.avgPitch;
@@ -97,6 +108,7 @@ export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
 
   updateStoredUser({
     ...user,
+    voiceOnboardingRequired: false,
     defaultVoice: {
       ...user.defaultVoice,
       defaultPitch,
