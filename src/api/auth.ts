@@ -75,7 +75,7 @@ export function hasDefaultVoice(user: StoredUserInfo | null) {
   return (
     isValidVoiceMetric(user.defaultVoice?.defaultPitch) &&
     isValidVoiceMetric(user.defaultVoice?.defaultWpm)
-  );
+  ) || isValidVoiceMetric(user.defaultPitch) || isValidVoiceMetric(user.defaultWpm);
 }
 
 export function needsVoiceOnboarding(user: StoredUserInfo | null) {

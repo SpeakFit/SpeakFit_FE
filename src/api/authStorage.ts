@@ -9,6 +9,8 @@ export type StoredUserInfo = {
   gender?: string;
   dialect?: string;
   voiceOnboardingRequired?: boolean;
+  defaultPitch?: number | null;
+  defaultWpm?: number | null;
   defaultVoice?: {
     defaultPitch?: number | null;
     defaultWpm?: number | null;
