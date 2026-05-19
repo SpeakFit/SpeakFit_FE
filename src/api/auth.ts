@@ -59,10 +59,6 @@ export async function login(payload: LoginRequest) {
   return unwrapResponse(data, "로그인에 실패했습니다.");
 }
 
-export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
-  persistAuthSession(auth.accessToken, auth.user, keepLogin);
-}
-
 export function getStoredUser(): StoredUserInfo | null {
   return getStoredAuthUser();
 }
@@ -77,16 +73,28 @@ export function hasDefaultVoice(user: StoredUserInfo | null) {
   }
 
   return (
-    isValidVoiceMetric(user.defaultPitch) &&
-    isValidVoiceMetric(user.defaultWpm)
-  ) || (
     isValidVoiceMetric(user.defaultVoice?.defaultPitch) &&
     isValidVoiceMetric(user.defaultVoice?.defaultWpm)
-  );
+  ) || isValidVoiceMetric(user.defaultPitch) || isValidVoiceMetric(user.defaultWpm);
 }
 
 export function needsVoiceOnboarding(user: StoredUserInfo | null) {
   return !hasDefaultVoice(user);
+}
+
+function withVoiceOnboardingStatus(user: StoredUserInfo): StoredUserInfo {
+  return {
+    ...user,
+    voiceOnboardingRequired: needsVoiceOnboarding(user),
+  };
+}
+
+export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
+  persistAuthSession(
+    auth.accessToken,
+    withVoiceOnboardingStatus(auth.user),
+    keepLogin
+  );
 }
 
 export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
@@ -100,8 +108,7 @@ export function saveVoiceOnboardingResult(result: UploadVoiceProfileResponse) {
 
   updateStoredUser({
     ...user,
-    defaultPitch,
-    defaultWpm,
+    voiceOnboardingRequired: false,
     defaultVoice: {
       ...user.defaultVoice,
       defaultPitch,

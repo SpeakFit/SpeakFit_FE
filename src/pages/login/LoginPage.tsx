@@ -1,11 +1,7 @@
 import "./styles/login.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  login,
-  needsVoiceOnboarding,
-  saveAuthSession,
-} from "../../api/auth";
+import { login, needsVoiceOnboarding, saveAuthSession } from "../../api/auth";
 import { ROUTES } from "../../app/routes.const";
 
 import EmailField from "./components/EmailField";
@@ -30,12 +26,12 @@ export default function LoginPage() {
       const auth = await login({ email, password });
       saveAuthSession(auth, keepLogin);
 
-      if (needsVoiceOnboarding(auth.user)) {
-        navigate(ROUTES.VOICE_RECORDING, { replace: true });
-        return;
-      }
-
-      navigate(ROUTES.SCRIPT, { replace: true });
+      navigate(
+        needsVoiceOnboarding(auth.user)
+          ? ROUTES.VOICE_RECORDING
+          : ROUTES.LANDING,
+        { replace: true }
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인에 실패했습니다.";
