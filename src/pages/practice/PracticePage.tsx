@@ -25,7 +25,7 @@ import {
   type PracticeSentenceResponse,
   type SpeechStyle,
 } from "../../api/practice";
-import { getScript } from "../../api/scripts";
+import { getScript, uploadPpt, type PptSlideResponse } from "../../api/scripts";
 import type {
   FeedbackIssue,
   FeedbackMetric,
@@ -501,9 +501,12 @@ export default function PracticePage() {
   const [isFetchingReport, setIsFetchingReport] = useState(false);
   const [feedbackReport, setFeedbackReport] =
     useState<PracticeFeedbackReport | null>(null);
-  const [presentationFile, setPresentationFile] = useState<File | null>(null);
-  const [presentationObjectUrl, setPresentationObjectUrl] = useState<string | null>(null);
-  const [presentationS3Url, setPresentationS3Url] = useState("");
+  const [presentationFileName, setPresentationFileName] = useState<string | null>(null);
+  const [presentationSourceUrl, setPresentationSourceUrl] = useState<string | undefined>();
+  const [presentationSlides, setPresentationSlides] = useState<PptSlideResponse[]>([]);
+  const [presentationUploadMessage, setPresentationUploadMessage] =
+    useState<string | null>(null);
+  const [isUploadingPresentation, setIsUploadingPresentation] = useState(false);
   const [presentationCurrentPage, setPresentationCurrentPage] = useState(1);
   const [presentationTotalPages, setPresentationTotalPages] = useState(1);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -544,18 +547,6 @@ export default function PracticePage() {
       previewAudioRef.current?.pause();
     };
   }, []);
-
-  useEffect(() => {
-    if (!presentationFile) {
-      setPresentationObjectUrl(null);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(presentationFile);
-    setPresentationObjectUrl(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [presentationFile]);
 
   useEffect(() => {
     if (!scriptId) return;
@@ -746,14 +737,57 @@ export default function PracticePage() {
     }
   };
 
+  const handlePresentationFileChange = async (file: File | null) => {
+    if (!file) return;
+    if (!scriptId) {
+      setPracticeError("프레젠테이션을 연결할 대본 정보가 없습니다.");
+      return;
+    }
+
+    setPresentationFileName(file.name);
+    setPresentationSlides([]);
+    setPresentationSourceUrl(undefined);
+    setPresentationCurrentPage(1);
+    setPresentationTotalPages(1);
+    setPresentationUploadMessage("프레젠테이션 파일을 업로드하고 있습니다.");
+    setPracticeError(null);
+    setIsUploadingPresentation(true);
+
+    try {
+      const result = await uploadPpt(scriptId, file);
+      const slides = result.pptInfo?.slides ?? [];
+      const totalSlides = result.pptInfo?.totalSlides ?? slides.length;
+
+      setPresentationSlides(slides);
+      setPresentationSourceUrl(result.pptInfo?.sourcePptUrl);
+      setPresentationTotalPages(Math.max(1, totalSlides || 1));
+      setPresentationUploadMessage(
+        result.message ??
+          (slides.length > 0
+            ? "프레젠테이션 파일 변환이 완료되었습니다."
+            : "프레젠테이션 파일 변환 요청이 접수되었습니다."),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "프레젠테이션 파일 업로드에 실패했습니다.";
+      setPracticeError(message);
+      setPresentationUploadMessage(null);
+      setPresentationFileName(null);
+    } finally {
+      setIsUploadingPresentation(false);
+    }
+  };
+
   const startRecording = async () => {
     if (!practiceId) {
       setPracticeError("연습 정보가 저장되지 않았습니다. 다시 시도해 주세요.");
       return;
     }
 
-    if (isPresentationMode && (!presentationFile || !presentationS3Url.trim())) {
-      setPracticeError("프레젠테이션 파일과 S3 저장소 URL을 입력해 주세요.");
+    if (isPresentationMode && presentationSlides.length === 0) {
+      setPracticeError("프레젠테이션 파일을 업로드하고 변환된 슬라이드를 확인해 주세요.");
       return;
     }
 
@@ -935,15 +969,15 @@ export default function PracticePage() {
               {isPresentationMode ? (
                 <>
                   <PresentationDeckPanel
-                    file={presentationFile}
-                    objectUrl={presentationObjectUrl}
-                    s3Url={presentationS3Url}
+                    fileName={presentationFileName}
+                    sourcePptUrl={presentationSourceUrl}
+                    slides={presentationSlides}
                     currentPage={presentationCurrentPage}
                     totalPages={presentationTotalPages}
-                    onFileChange={setPresentationFile}
-                    onS3UrlChange={setPresentationS3Url}
+                    isUploading={isUploadingPresentation}
+                    uploadMessage={presentationUploadMessage}
+                    onFileChange={handlePresentationFileChange}
                     onCurrentPageChange={setPresentationCurrentPage}
-                    onTotalPagesChange={setPresentationTotalPages}
                   />
 
                   <div className="practice-page__script-column">

@@ -1,73 +1,65 @@
 import { useEffect, useMemo, useRef, type ChangeEvent } from "react";
+import type { PptSlideResponse } from "../../../api/scripts";
 
 type PresentationDeckPanelProps = {
-  file: File | null;
-  objectUrl: string | null;
-  s3Url: string;
+  fileName: string | null;
+  sourcePptUrl?: string;
+  slides: PptSlideResponse[];
   currentPage: number;
   totalPages: number;
+  isUploading: boolean;
+  uploadMessage?: string | null;
   onFileChange: (file: File | null) => void;
-  onS3UrlChange: (value: string) => void;
   onCurrentPageChange: (page: number) => void;
-  onTotalPagesChange: (pages: number) => void;
 };
 
-function getDeckType(file: File | null) {
-  if (!file) return null;
-
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  if (extension === "pdf") return "pdf";
-  if (extension === "ppt" || extension === "pptx") return "ppt";
-
-  return null;
-}
-
 export default function PresentationDeckPanel({
-  file,
-  objectUrl,
-  s3Url,
+  fileName,
+  sourcePptUrl,
+  slides,
   currentPage,
   totalPages,
+  isUploading,
+  uploadMessage,
   onFileChange,
-  onS3UrlChange,
   onCurrentPageChange,
-  onTotalPagesChange,
 }: PresentationDeckPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const deckType = getDeckType(file);
+  const normalizedTotalPages = Math.max(1, totalPages);
   const canMovePrev = currentPage > 1;
-  const canMoveNext = currentPage < totalPages;
-  const previewUrl = useMemo(() => {
-    if (!objectUrl || deckType !== "pdf") return null;
-
-    return `${objectUrl}#page=${currentPage}&toolbar=0&navpanes=0`;
-  }, [currentPage, deckType, objectUrl]);
+  const canMoveNext = currentPage < normalizedTotalPages;
+  const currentSlide = useMemo(() => {
+    return (
+      slides.find((slide) => slide.page === currentPage) ??
+      slides[currentPage - 1] ??
+      null
+    );
+  }, [currentPage, slides]);
 
   useEffect(() => {
-    if (currentPage <= totalPages) return;
-    onCurrentPageChange(totalPages);
-  }, [currentPage, onCurrentPageChange, totalPages]);
+    if (currentPage <= normalizedTotalPages) return;
+    onCurrentPageChange(normalizedTotalPages);
+  }, [currentPage, normalizedTotalPages, onCurrentPageChange]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     onFileChange(nextFile);
-    onCurrentPageChange(1);
-    onTotalPagesChange(1);
+    event.target.value = "";
   };
 
   return (
     <section className="presentation-deck">
       <div className="presentation-deck__header">
         <span className="presentation-deck__title">
-          {file?.name ?? "프레젠테이션 파일"}
+          {fileName ?? "프레젠테이션 파일"}
         </span>
         <span className="presentation-deck__meta">
-          {file ? `${Math.max(1, totalPages)} 페이지` : "PDF, PPT, PPTX"}
+          {fileName ? `${normalizedTotalPages} 페이지` : "PDF, PPT, PPTX"}
         </span>
       </div>
 
       <div className="presentation-deck__body">
-        {!file && (
+        {!fileName && (
           <div className="presentation-deck__empty">
             <button
               className="presentation-deck__upload"
@@ -80,54 +72,46 @@ export default function PresentationDeckPanel({
           </div>
         )}
 
-        {file && deckType === "pdf" && previewUrl && (
-          <iframe
-            key={previewUrl}
-            className="presentation-deck__preview"
-            src={previewUrl}
-            title={file.name}
+        {fileName && isUploading && (
+          <div className="presentation-deck__ppt-preview">
+            <strong>{fileName}</strong>
+            <span>{uploadMessage ?? "프레젠테이션 파일을 변환하고 있습니다."}</span>
+          </div>
+        )}
+
+        {fileName && !isUploading && currentSlide && (
+          <img
+            className="presentation-deck__slide-image"
+            src={currentSlide.imageUrl}
+            alt={`슬라이드 ${currentSlide.page}`}
           />
         )}
 
-        {file && deckType === "ppt" && (
+        {fileName && !isUploading && !currentSlide && (
           <div className="presentation-deck__ppt-preview">
-            <strong>{file.name}</strong>
-            <span>PPT 파일이 업로드되었습니다.</span>
-            <button
-              className="presentation-deck__secondary"
-              type="button"
-              onClick={() => window.open(objectUrl ?? undefined, "_blank")}
-            >
-              파일 확인하기
-            </button>
+            <strong>{fileName}</strong>
+            <span>{uploadMessage ?? "변환된 슬라이드를 찾지 못했습니다."}</span>
+            {sourcePptUrl && (
+              <button
+                className="presentation-deck__secondary"
+                type="button"
+                onClick={() => window.open(sourcePptUrl, "_blank")}
+              >
+                원본 확인하기
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      <div className="presentation-deck__config">
-        <label className="presentation-deck__field">
-          <span>S3 저장소 URL</span>
-          <input
-            type="url"
-            placeholder="https://..."
-            value={s3Url}
-            onChange={(event) => onS3UrlChange(event.target.value)}
-          />
-        </label>
-
-        <label className="presentation-deck__field presentation-deck__field--pages">
-          <span>전체 페이지</span>
-          <input
-            type="number"
-            min={1}
-            value={totalPages}
-            onChange={(event) => {
-              const pages = Math.max(1, Number(event.target.value) || 1);
-              onTotalPagesChange(pages);
-            }}
-          />
-        </label>
-      </div>
+      {sourcePptUrl && (
+        <div className="presentation-deck__source">
+          <span>S3 저장소</span>
+          <a href={sourcePptUrl} target="_blank" rel="noreferrer">
+            {sourcePptUrl}
+          </a>
+        </div>
+      )}
 
       <div className="presentation-deck__footer">
         <button
@@ -139,7 +123,7 @@ export default function PresentationDeckPanel({
         >
           ‹
         </button>
-        <span>슬라이드 {currentPage} / {Math.max(1, totalPages)}</span>
+        <span>슬라이드 {currentPage} / {normalizedTotalPages}</span>
         <button
           className="presentation-deck__nav"
           type="button"
