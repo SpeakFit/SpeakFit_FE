@@ -67,6 +67,7 @@ export type PptSlideResponse = {
 };
 
 export type PptInfoResponse = {
+  pptUrl?: string;
   sourcePptUrl?: string;
   totalSlides?: number;
   slides?: PptSlideResponse[];

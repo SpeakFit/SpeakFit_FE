@@ -572,15 +572,17 @@ export default function PracticePage() {
 
         // 기존 업로드된 PPT 정보가 있다면 상태 업데이트
         if (script.pptInfo) {
-          const { pptUrl, totalSlides, slides } = script.pptInfo;
+          const { pptUrl, sourcePptUrl, totalSlides, slides } = script.pptInfo;
+          const finalPptUrl = pptUrl || sourcePptUrl;
+          
           setPresentationSlides(slides || []);
-          setPresentationSourceUrl(pptUrl);
+          setPresentationSourceUrl(finalPptUrl);
           setPresentationTotalPages(totalSlides || slides?.length || 1);
           setPresentationCurrentPage(1);
 
           // S3 URL 등에서 파일명 추출 (확장자 포함 마지막 부분)
-          if (pptUrl) {
-            const fileName = pptUrl.split("/").pop() || "기존 업로드 자료";
+          if (finalPptUrl) {
+            const fileName = finalPptUrl.split("/").pop() || "기존 업로드 자료";
             setPresentationFileName(decodeURIComponent(fileName));
           }
         }
