@@ -15,6 +15,8 @@ import {
   type SpeechTypeCode,
 } from "../../api/scripts";
 import type { PracticeRouteState } from "../practice/types";
+import ScriptEditorSkeleton from "./components/ScriptEditorSkeleton";
+import ScriptOptimizingModal from "./components/ScriptOptimizingModal";
 
 type AudienceAge = "어린이" | "청소년" | "노년" | "성인" | "";
 type AudienceLevel = "잘 모름" | "보통" | "잘 앎" | "";
@@ -128,6 +130,9 @@ const ScriptPage = () => {
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiMode, setAiMode] = useState<"idle" | "generating" | "optimizing">(
+    "idle"
+  );
   const [errorMessage, setErrorMessage] = useState("");
 
   const selectedScript = useMemo(
@@ -323,30 +328,35 @@ const ScriptPage = () => {
   const handleGenerateOrOptimize = async () => {
     if (!selectedScript || !isActionEnabled) return;
 
+    const nextMode = hasContent ? "optimizing" : "generating";
+
     setIsSubmitting(true);
+    setAiMode(nextMode);
     setErrorMessage("");
 
     try {
       const payload = buildAiPayload(selectedScript);
-      const updatedScript = hasContent
-        ? await updateScript({
-            ...payload,
-            content: selectedContent.trim(),
-          })
-        : await generateScript(payload);
+      const updatedScript =
+        nextMode === "optimizing"
+          ? await updateScript({
+              ...payload,
+              content: selectedContent.trim(),
+            })
+          : await generateScript(payload);
 
       applyGeneratedScript(getGeneratedContent(updatedScript));
     } catch (error) {
       setErrorMessage(
         getErrorMessage(
           error,
-          hasContent
+          nextMode === "optimizing"
             ? "스크립트 최적화에 실패했습니다. 생성된 대본으로 발표 연습을 시작할 수 있어요."
             : "스크립트 생성에 실패했습니다."
         )
       );
     } finally {
       setIsSubmitting(false);
+      setAiMode("idle");
     }
   };
 
@@ -510,12 +520,16 @@ const ScriptPage = () => {
                   {selectedScript.title.trim() || "발표 주제를 작성하세요."}
                 </div>
 
-                <textarea
-                  className="script-editor-panel__textarea"
-                  value={selectedContent}
-                  onChange={(e) => updateSelectedScript("content", e.target.value)}
-                  placeholder={GUIDE_PLACEHOLDER}
-                />
+                {aiMode === "generating" ? (
+                  <ScriptEditorSkeleton />
+                ) : (
+                  <textarea
+                    className="script-editor-panel__textarea"
+                    value={selectedContent}
+                    onChange={(e) => updateSelectedScript("content", e.target.value)}
+                    placeholder={GUIDE_PLACEHOLDER}
+                  />
+                )}
               </>
             )}
           </section>
@@ -535,9 +549,21 @@ const ScriptPage = () => {
                   className="script-generator-panel__submit-btn"
                   disabled={!isActionEnabled || isSubmitting}
                   onClick={handleGenerateOrOptimize}
+                  style={{ display: aiMode !== "idle" ? "none" : undefined }}
                 >
-                  {isSubmitting ? "처리 중" : hasContent ? "스크립트 최적화" : "스크립트 생성"}
+                  {hasContent ? "스크립트 최적화" : "스크립트 생성"}
                 </button>
+
+                {aiMode === "generating" && (
+                  <span className="script-generator-panel__status-pill">
+                    생성 중 ...
+                  </span>
+                )}
+                {aiMode === "optimizing" && (
+                  <span className="script-generator-panel__status-pill">
+                    최적화 중 ...
+                  </span>
+                )}
               </div>
 
               <div className="script-generator-panel__form">
@@ -685,6 +711,8 @@ const ScriptPage = () => {
           </div>
         </div>
       </div>
+
+      <ScriptOptimizingModal open={aiMode === "optimizing"} />
     </main>
   );
 };
