@@ -17,6 +17,9 @@ export type ScriptResponse = {
   content: string;
   markedContent?: string;
   marked_content?: string;
+  pptStatus?: string;
+  pptErrorMessage?: string;
+  pptInfo?: PptInfoResponse;
   createdAt?: string;
 };
 
@@ -56,6 +59,25 @@ export type PatchScriptResponse = {
   title: string;
   content: string;
   updatedAt: string;
+};
+
+export type PptSlideResponse = {
+  page: number;
+  imageUrl: string;
+};
+
+export type PptInfoResponse = {
+  pptUrl?: string;
+  sourcePptUrl?: string;
+  totalSlides?: number;
+  slides?: PptSlideResponse[];
+};
+
+export type UploadPptResponse = {
+  scriptId: number;
+  pptStatus?: string;
+  message?: string;
+  pptInfo?: PptInfoResponse;
 };
 
 export type InputPracticeInfoRequest = {
@@ -116,6 +138,26 @@ export async function patchScript(scriptId: number, payload: PatchScriptRequest)
   );
 
   return unwrapResponse(data, "대본 수정에 실패했습니다.");
+}
+
+export async function uploadPpt(scriptId: number, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await api.patch<ApiResponse<UploadPptResponse>>(
+    `/api/scripts/${scriptId}/ppt`,
+    formData,
+  );
+
+  return unwrapResponse(data, "프레젠테이션 파일 업로드에 실패했습니다.");
+}
+
+export async function getPptStatus(scriptId: number) {
+  const { data } = await api.get<ApiResponse<UploadPptResponse>>(
+    `/api/scripts/${scriptId}/ppt/status`,
+  );
+
+  return unwrapResponse(data, "PPT 변환 상태를 확인하지 못했습니다.");
 }
 
 export async function inputPracticeInfo(

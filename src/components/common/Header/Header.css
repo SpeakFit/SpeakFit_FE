@@ -30,3 +30,30 @@
   height: 24px;
   display: block;
 }
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-header__nav-link {
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.app-header__nav-link:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.app-header__nav-link--active {
+  background: #edfaf8;
+  color: #33cbbd;
+  font-weight: 600;
+}
