@@ -23,6 +23,7 @@ export type PracticeRouteState = {
   scriptTitle: string;
   scriptContent: string;
   introForm: IntroFormState;
+  initialTab?: string;
 };
 
 export type SpeechStyleId = number;

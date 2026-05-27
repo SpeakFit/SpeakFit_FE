@@ -17,6 +17,9 @@ export type ScriptResponse = {
   content: string;
   markedContent?: string;
   marked_content?: string;
+  pptStatus?: string;
+  pptErrorMessage?: string;
+  pptInfo?: PptInfoResponse;
   createdAt?: string;
 };
 
@@ -146,6 +149,14 @@ export async function uploadPpt(scriptId: number, file: File) {
   );
 
   return unwrapResponse(data, "프레젠테이션 파일 업로드에 실패했습니다.");
+}
+
+export async function getPptStatus(scriptId: number) {
+  const { data } = await api.get<ApiResponse<UploadPptResponse>>(
+    `/api/scripts/${scriptId}/ppt/status`,
+  );
+
+  return unwrapResponse(data, "PPT 변환 상태를 확인하지 못했습니다.");
 }
 
 export async function inputPracticeInfo(

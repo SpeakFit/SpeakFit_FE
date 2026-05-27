@@ -94,6 +94,11 @@ export type StartPracticeWord = {
   endCharIndex: number;
 };
 
+export type StartPracticeSlide = {
+  slideIndex: number;
+  imageUrl: string;
+};
+
 export type StartPracticeResponse = {
   practiceId: number;
   title: string;
@@ -103,6 +108,8 @@ export type StartPracticeResponse = {
   sentences: StartPracticeSentence[];
   scriptWords: StartPracticeWord[];
   createdAt?: string;
+  scriptType?: string;
+  slides?: StartPracticeSlide[];
 };
 
 export type StopPracticeResponse = {
