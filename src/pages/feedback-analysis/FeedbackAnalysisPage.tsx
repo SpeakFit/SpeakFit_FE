@@ -200,9 +200,16 @@ export default function FeedbackAnalysisPage() {
           setFeedbackData(
             mapFeedbackResponse(detail as FeedbackDetailCompleted)
           );
+        } else if (detail.status === "FAILED") {
+          setErrorMessage(
+            (detail as { message?: string }).message ||
+              "피드백 분석에 실패했습니다. 잠시 후 다시 시도해주세요."
+          );
         } else {
+          // ANALYZING, GENERATING 등
           setStatusMessage(
-            "AI가 최근 연습 기록을 분석 중이에요. 잠시 후 다시 시도해주세요."
+            (detail as { message?: string }).message ||
+              "AI가 최근 연습 기록을 분석 중이에요. 잠시 후 다시 시도해주세요."
           );
         }
       } catch (error) {

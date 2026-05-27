@@ -12,7 +12,7 @@ export type CreateFeedbackRequest = {
 
 export type CreateFeedbackResponse = {
   feedbackId: number;
-  status: "GENERATING" | "ANALYZING" | "COMPLETED" | string;
+  status: "GENERATING" | "ANALYZING" | "COMPLETED" | "FAILED" | string;
   message: string;
 };
 
@@ -36,33 +36,34 @@ export type FeedbackUserAverageMetrics = {
 };
 
 export type FeedbackStyleMatching = {
-  mostSimilarStyle: string;
-  matchingRate: number;
-  description: string;
+  mostSimilarStyle: string | null;
+  matchingRate: number | null;
+  description: string | null;
 };
 
-export type FeedbackGrowthTrendItem = {
-  current: number;
-  previous: number;
-  diff: string; // "+ 15wpm"
+// 백엔드 실제 응답: 각 지표가 [{date, value}, ...] 시계열 배열
+export type FeedbackTrendPoint = {
+  date: string;  // "2026-05-22"
+  value: number;
 };
 
 export type FeedbackGrowthTrend = {
-  speed: FeedbackGrowthTrendItem;
-  db: FeedbackGrowthTrendItem;
-  pause: FeedbackGrowthTrendItem;
-  zcr: FeedbackGrowthTrendItem;
-  hz: FeedbackGrowthTrendItem;
+  speed: FeedbackTrendPoint[];
+  db: FeedbackTrendPoint[];
+  pause: FeedbackTrendPoint[];
+  zcr: FeedbackTrendPoint[];
+  hz: FeedbackTrendPoint[];
 };
 
+// 실제 응답에서 title/description이 null로 올 수 있음
 export type FeedbackAiReport = {
   positiveFeedback: {
-    title: string;
-    description: string;
+    title: string | null;
+    description: string | null;
   };
   improvementFeedback: {
-    title: string;
-    description: string;
+    title: string | null;
+    description: string | null;
   };
 };
 
@@ -72,9 +73,9 @@ export type FeedbackPracticeGuide = {
   nextStep: string;
 };
 
-export type FeedbackDetailAnalyzing = {
+export type FeedbackDetailPending = {
   id: number;
-  status: "ANALYZING";
+  status: "ANALYZING" | "GENERATING" | "FAILED";
   message: string;
 };
 
@@ -91,7 +92,7 @@ export type FeedbackDetailCompleted = {
 };
 
 export type FeedbackDetailResponse =
-  | FeedbackDetailAnalyzing
+  | FeedbackDetailPending
   | FeedbackDetailCompleted;
 
 export async function getFeedbackDetail(feedbackId: number) {
