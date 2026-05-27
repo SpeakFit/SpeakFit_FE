@@ -97,6 +97,14 @@ function renderMarkedLine(line: string) {
   return parts.length > 0 ? parts : line;
 }
 
+function isScriptAlignedWithSentences(script: string, sentences: StartPracticeSentence[]) {
+  return sentences.every((sentence) =>
+    sentence.words.every(
+      (word) => script.slice(word.startCharIndex, word.endCharIndex) === word.text,
+    ),
+  );
+}
+
 export default function ScriptPanel({
   title,
   script,
@@ -127,12 +135,15 @@ export default function ScriptPanel({
     const result: ContentItem[] = [];
     let currentParagraphTokens: ScriptToken[] = [];
     let lastProcessedCharIdx = 0;
+    const isScriptAligned = isScriptAlignedWithSentences(script, sentences);
 
     const contentMap = new Map<number, PracticeContentItem>();
     contentList.forEach((item) => contentMap.set(item.index, item));
 
     sentences.forEach((sentence) => {
-      const gap = script.slice(lastProcessedCharIdx, sentence.startCharIndex);
+      const gap = isScriptAligned
+        ? script.slice(lastProcessedCharIdx, sentence.startCharIndex)
+        : "";
       if (gap.includes("\n")) {
         if (currentParagraphTokens.length > 0) {
           result.push({ type: "paragraph", tokens: currentParagraphTokens });
@@ -144,7 +155,11 @@ export default function ScriptPanel({
 
       sentence.words.forEach((word: StartPracticeWord, wIdx: number) => {
         const prevEnd = wIdx === 0 ? sentence.startCharIndex : sentence.words[wIdx - 1].endCharIndex;
-        const wordGap = script.slice(prevEnd, word.startCharIndex);
+        const wordGap = isScriptAligned
+          ? script.slice(prevEnd, word.startCharIndex)
+          : wIdx > 0
+            ? " "
+            : "";
         if (wordGap) {
           currentParagraphTokens.push({ type: "space", text: wordGap });
         }
