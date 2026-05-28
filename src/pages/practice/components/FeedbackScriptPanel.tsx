@@ -5,6 +5,8 @@ type FeedbackScriptPanelProps = {
   title: string;
   script: string;
   issues: FeedbackIssue[];
+  /** 분석 결과 대기 중 표시할 안내 문구로 교체할지 여부 */
+  isAwaitingAnalysis?: boolean;
 };
 
 type TooltipState = {
@@ -28,6 +30,7 @@ export default function FeedbackScriptPanel({
   title,
   script,
   issues,
+  isAwaitingAnalysis = false,
 }: FeedbackScriptPanelProps) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const scriptLines = script
@@ -50,7 +53,9 @@ export default function FeedbackScriptPanel({
       <div className="feedback-script-panel__header">
         <span>{title}</span>
         <span className="feedback-script-panel__hint">
-          노란색 문장에 커서를 올려 상세 피드백을 확인하세요
+          {isAwaitingAnalysis
+            ? "분석이 끝나면 우측에 결과가 표시돼요"
+            : "노란색 문장에 커서를 올려 상세 피드백을 확인하세요"}
         </span>
       </div>
 
