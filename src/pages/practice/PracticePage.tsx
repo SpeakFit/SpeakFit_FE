@@ -860,10 +860,6 @@ export default function PracticePage() {
     setIsSubmittingPractice(true);
 
     try {
-      if (isPresentationMode && selectedSpeechStyleId) {
-        await selectPracticeStyle(practiceId, selectedSpeechStyleId);
-      }
-
       const startRes = await requestStartPractice(practiceId);
 
       setPracticeSentences(startRes.sentences);
