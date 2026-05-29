@@ -1006,6 +1006,21 @@ export default function PracticePage() {
     }
   };
 
+  const handleRetryRecording = async () => {
+    reportPollTokenRef.current += 1;
+    reportRequestedRef.current = false;
+    realtime.disconnect();
+    setFeedbackReport(null);
+    setActiveFeedbackMetric(null);
+    setAnalysisStatusMessage(null);
+    setPracticeError(null);
+    setIsFetchingReport(false);
+    setElapsedSeconds(0);
+    setNextTriggerTime(Number(introForm.duration) * 60);
+
+    await startRecording();
+  };
+
   const displayedFeedbackReport = feedbackReport ?? {
     ...DEFAULT_FEEDBACK_REPORT,
     script: practiceScript,
@@ -1142,12 +1157,19 @@ export default function PracticePage() {
             <>
               <button
                 className="practice-page__btn practice-page__btn--sub"
+                type="button"
                 onClick={pauseRecording}
               >
                 일시정지
               </button>
 
-              <RecordButton onClick={handleFinishRecord} />
+              <button
+                className="practice-page__btn practice-page__btn--primary"
+                type="button"
+                onClick={handleFinishRecord}
+              >
+                녹음 완료
+              </button>
             </>
           )}
 
@@ -1155,6 +1177,7 @@ export default function PracticePage() {
             <>
               <button
                 className="practice-page__btn practice-page__btn--sub"
+                type="button"
                 onClick={resumeRecording}
               >
                 녹음 재개
@@ -1162,9 +1185,10 @@ export default function PracticePage() {
 
               <button
                 className="practice-page__btn practice-page__btn--primary"
+                type="button"
                 onClick={handleFinishRecord}
               >
-                발표 완료
+                녹음 완료
               </button>
             </>
           )}
@@ -1173,9 +1197,10 @@ export default function PracticePage() {
             <button
               className="practice-page__btn practice-page__btn--primary"
               type="button"
-              disabled
+              aria-busy={isFetchingReport}
+              onClick={handleRetryRecording}
             >
-              {isFetchingReport ? "결과 분석 중" : "분석 준비 중"}
+              재녹음하기
             </button>
           )}
         </div>
