@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FeedbackIssue } from "../types";
 
 type FeedbackScriptPanelProps = {
@@ -15,8 +15,23 @@ type TooltipState = {
   y: number;
 };
 
+function normalizeFeedbackText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
 function getLineIssues(line: string, issues: FeedbackIssue[]) {
-  return issues.filter((item) => item.excerpt && line.includes(item.excerpt));
+  const normalizedLine = normalizeFeedbackText(line);
+
+  return issues.filter((item) => {
+    if (!item.excerpt) return false;
+
+    const normalizedExcerpt = normalizeFeedbackText(item.excerpt);
+
+    return (
+      normalizedLine.includes(normalizedExcerpt) ||
+      normalizedExcerpt.includes(normalizedLine)
+    );
+  });
 }
 
 function getTooltipPosition(event: React.MouseEvent<HTMLElement>) {
@@ -42,11 +57,29 @@ export default function FeedbackScriptPanel({
     event: React.MouseEvent<HTMLElement>,
     nextIssues: FeedbackIssue[],
   ) => {
+    event.stopPropagation();
     setTooltip({
       issues: nextIssues,
       ...getTooltipPosition(event),
     });
   };
+
+  useEffect(() => {
+    if (!tooltip) return;
+
+    const hideTooltip = () => setTooltip(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") hideTooltip();
+    };
+
+    window.addEventListener("pointerdown", hideTooltip);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", hideTooltip);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [tooltip]);
 
   return (
     <section className="feedback-script-panel">
@@ -55,7 +88,8 @@ export default function FeedbackScriptPanel({
         <span className="feedback-script-panel__hint">
           {isAwaitingAnalysis
             ? "분석이 끝나면 우측에 결과가 표시돼요"
-            : "노란색 문장에 커서를 올려 상세 피드백을 확인하세요"}
+            : "노란색 문장을 클릭해 상세 피드백을 확인하세요"}
+
         </span>
       </div>
 
@@ -66,14 +100,14 @@ export default function FeedbackScriptPanel({
           return (
             <p key={`${line}-${index}`} className="feedback-script-panel__paragraph">
               {line && lineIssues.length > 0 ? (
-                <span
+                <button
+                  type="button"
                   className="feedback-script-panel__highlight-anchor"
-                  onMouseEnter={(event) => showTooltip(event, lineIssues)}
-                  onMouseMove={(event) => showTooltip(event, lineIssues)}
-                  onMouseLeave={() => setTooltip(null)}
+                  onClick={(event) => showTooltip(event, lineIssues)}
+                  aria-label="상세 피드백 보기"
                 >
                   <mark className="feedback-script-panel__highlight">{line}</mark>
-                </span>
+                </button>
               ) : (
                 line
               )}
@@ -87,6 +121,7 @@ export default function FeedbackScriptPanel({
           className="feedback-script-popover is-visible"
           role="status"
           style={{ left: tooltip.x, top: tooltip.y }}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           {tooltip.issues.map((issue, issueIndex) => (
             <span

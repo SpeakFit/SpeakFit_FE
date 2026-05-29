@@ -56,6 +56,303 @@
   height: 100%;
 }
 
+.practice-page__script-column {
+  min-width: 0;
+}
+
+.practice-page__script-column .script-panel {
+  height: 720px;
+  min-height: 720px;
+  border-radius: 12px;
+}
+
+.feedback-script-panel {
+  height: 720px;
+  min-height: 720px;
+  border-radius: 12px;
+}
+
+.practice-page__script-column .script-panel__header {
+  min-height: 50px;
+  padding: 14px 24px 12px;
+}
+
+.feedback-script-panel__header {
+  min-height: 50px;
+  padding: 14px 24px 12px;
+}
+
+.practice-page__script-column .script-panel__body {
+  padding: 28px 36px 34px;
+}
+
+.feedback-script-panel__body {
+  padding: 28px 36px 34px;
+}
+
+.practice-page__script-column .script-panel__paragraph {
+  font-size: 25px;
+  line-height: 1.54;
+  margin-bottom: 30px;
+}
+
+.feedback-script-panel__paragraph {
+  font-size: 25px;
+  line-height: 1.54;
+  margin-bottom: 30px;
+}
+
+.practice-page__script-column .script-panel__footer {
+  padding: 12px 24px;
+}
+
+.presentation-deck {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 720px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #edf1f4;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(72, 85, 106, 0.1);
+}
+
+.presentation-deck__header {
+  min-height: 50px;
+  padding: 14px 28px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #606874;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__title,
+.presentation-deck__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__title {
+  font-weight: 700;
+}
+
+.presentation-deck__meta {
+  color: #9aa3af;
+}
+
+.presentation-deck__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 38px 44px;
+  background: #fff;
+}
+
+/* ── PPT 변환 로딩 애니메이션 ── */
+
+@keyframes ppt-bar-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+@keyframes ppt-icon-pulse {
+  0%, 100% { transform: scale(1);    opacity: 1;   }
+  50%       { transform: scale(0.92); opacity: 0.65; }
+}
+
+@keyframes ppt-dot-bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.35; }
+  40%           { transform: translateY(-6px); opacity: 1;    }
+}
+
+.presentation-deck__converting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.presentation-deck__converting-icon {
+  animation: ppt-icon-pulse 1.6s ease-in-out infinite;
+}
+
+.presentation-deck__converting-filename {
+  max-width: 100%;
+  overflow: hidden;
+  color: #202938;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__converting-bar {
+  width: 220px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e8edf2;
+  overflow: hidden;
+  position: relative;
+}
+
+.presentation-deck__converting-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #33cbbd, #55c9b8, #33cbbd);
+  animation: ppt-bar-slide 1.5s ease-in-out infinite;
+}
+
+.presentation-deck__converting-step {
+  color: #8a93a3;
+  font-size: 13px;
+  transition: opacity 0.3s ease;
+}
+
+.presentation-deck__converting-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.presentation-deck__converting-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #33cbbd;
+  animation: ppt-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.presentation-deck__converting-dots span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.presentation-deck__converting-dots span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+/* ── 기존 스타일 ── */
+
+.presentation-deck__empty,
+.presentation-deck__ppt-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 340px;
+  color: #8a93a3;
+  text-align: center;
+}
+
+.presentation-deck__upload,
+.presentation-deck__secondary {
+  height: 46px;
+  border: none;
+  border-radius: 6px;
+  padding: 0 28px;
+  background: #55c9b8;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.presentation-deck__secondary {
+  background: #202938;
+}
+
+.presentation-deck__empty p,
+.presentation-deck__ppt-preview span {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.presentation-deck__ppt-preview strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #202938;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__slide-image {
+  width: 100%;
+  height: 100%;
+  min-height: 430px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f4f6f8;
+}
+
+.presentation-deck__source {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 28px 16px;
+  color: #7a838f;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__source span {
+  font-weight: 700;
+}
+
+.presentation-deck__source a {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f68c7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-deck__footer {
+  min-height: 58px;
+  border-top: 1px solid #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  color: #606874;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.presentation-deck__nav {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #606874;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.presentation-deck__nav:disabled {
+  color: #c8ced6;
+  cursor: not-allowed;
+}
+
 .script-panel {
   background: #fff;
   border: 1px solid #edf1f4;
@@ -522,6 +819,14 @@
 .feedback-script-panel__highlight-anchor {
   position: relative;
   display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .feedback-script-popover {
