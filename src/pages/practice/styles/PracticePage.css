@@ -72,7 +72,7 @@
   border-radius: 12px;
 }
 
-.practice-page__script-column .feedback-script-panel {
+.feedback-script-panel {
   height: 720px;
   min-height: 720px;
   border-radius: 12px;
@@ -83,7 +83,7 @@
   padding: 14px 24px 12px;
 }
 
-.practice-page__script-column .feedback-script-panel__header {
+.feedback-script-panel__header {
   min-height: 50px;
   padding: 14px 24px 12px;
 }
@@ -92,7 +92,7 @@
   padding: 28px 36px 34px;
 }
 
-.practice-page__script-column .feedback-script-panel__body {
+.feedback-script-panel__body {
   padding: 28px 36px 34px;
 }
 
@@ -102,7 +102,7 @@
   margin-bottom: 30px;
 }
 
-.practice-page__script-column .feedback-script-panel__paragraph {
+.feedback-script-panel__paragraph {
   font-size: 25px;
   line-height: 1.54;
   margin-bottom: 30px;
