@@ -37,6 +37,7 @@ type UsePracticeRealtimeResult = {
   disconnect: () => void;
 };
 
+const WS_READY_CONNECTING = 0;
 const WS_READY_OPEN = 1;
 
 function getRealtimeWsUrl(practiceId: number) {
@@ -200,13 +201,22 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const disconnect = useCallback(() => {
     const socket = socketRef.current;
 
-    if (socket && socket.readyState === WS_READY_OPEN) {
+    if (
+      socket &&
+      (socket.readyState === WS_READY_CONNECTING ||
+        socket.readyState === WS_READY_OPEN)
+    ) {
       isIntentionalCloseRef.current = true;
-      socket.send(JSON.stringify({ type: "stop" }));
+
+      if (socket.readyState === WS_READY_OPEN) {
+        socket.send(JSON.stringify({ type: "stop" }));
+      }
+
       socket.close(1000, "practice stopped");
+    } else {
+      socketRef.current = null;
     }
 
-    socketRef.current = null;
     setStatus("idle");
     setErrorMessage(null);
     setHighlight(null);
