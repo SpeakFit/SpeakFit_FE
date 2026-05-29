@@ -355,9 +355,14 @@ function getSortedSentences(sentences: PracticeSentenceResponse[] = []) {
   return [...sentences].sort((a, b) => a.index - b.index);
 }
 
+function getSortedStartSentences(sentences: StartPracticeSentence[] = []) {
+  return [...sentences].sort((a, b) => a.sentenceIndex - b.sentenceIndex);
+}
+
 function getSentenceExcerpt(
   sentences: PracticeSentenceResponse[],
   issue: PracticeIssueResponse,
+  fallbackSentences: StartPracticeSentence[] = [],
 ) {
   if (issue.sentenceText) return issue.sentenceText;
 
@@ -367,27 +372,44 @@ function getSentenceExcerpt(
     );
 
     if (sentence) return sentence.text ?? sentence.originalText ?? "";
+
+    const fallbackSentence = fallbackSentences.find(
+      (item) => item.scriptSentenceId === issue.scriptSentenceId,
+    );
+
+    if (fallbackSentence) {
+      return fallbackSentence.originalText ?? fallbackSentence.normalizedText ?? "";
+    }
   }
 
   const sentenceIndex = issue.sentenceIndex ?? issue.startIndex;
 
-  if (sentenceIndex === undefined || sentences.length === 0) return "";
+  if (sentenceIndex === undefined) return "";
 
   const sentence =
     sentences.find((item) => item.index === sentenceIndex) ??
     sentences.find((item) => item.index === sentenceIndex + 1) ??
     sentences.find((item) => item.index === sentenceIndex - 1);
 
-  return sentence?.text ?? sentence?.originalText ?? "";
+  if (sentence) return sentence.text ?? sentence.originalText ?? "";
+
+  const fallbackSentence =
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex) ??
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex + 1) ??
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex - 1);
+
+  return fallbackSentence?.originalText ?? fallbackSentence?.normalizedText ?? "";
 }
 
 function mapPracticeReport(
   report: PracticeReportResponse,
   fallbackScript: string,
+  fallbackSentences: StartPracticeSentence[] = [],
 ): PracticeFeedbackReport {
   const analysis = report.analysis;
   const aiAnalysis = report.aiAnalysis;
   const sentences = getSortedSentences(report.sentences);
+  const startSentences = getSortedStartSentences(fallbackSentences);
   const scriptFromSentences = sentences
     .map((sentence) => normalizeScriptLine(sentence.text ?? sentence.originalText))
     .filter(Boolean)
@@ -438,7 +460,7 @@ function mapPracticeReport(
     report.practiceIssues && report.practiceIssues.length > 0
       ? report.practiceIssues.map((issue, index): FeedbackIssue => ({
           metricId: mapIssueMetricId(issue, index),
-          excerpt: getSentenceExcerpt(sentences, issue),
+          excerpt: getSentenceExcerpt(sentences, issue, startSentences),
           title: issue.issueSummary ?? "상세 피드백",
           description:
             issue.feedbackContent ??
@@ -941,7 +963,7 @@ export default function PracticePage() {
         const reportStatus = normalizePracticeStatus(report.status);
 
         if (reportStatus === "ANALYZED") {
-          setFeedbackReport(mapPracticeReport(report, practiceScript));
+          setFeedbackReport(mapPracticeReport(report, practiceScript, practiceSentences));
           setActiveFeedbackMetric(null);
           setAnalysisStatusMessage(null);
           setStage("record-finished");
@@ -1042,7 +1064,29 @@ export default function PracticePage() {
             stage === "record-finished" ? "practice-page__main-grid--feedback" : ""
           } ${isPresentationMode ? "practice-page__main-grid--presentation" : ""}`}
         >
-          {stage === "record-finished" ? (
+          {stage === "record-finished" && isPresentationMode ? (
+            <>
+              <PresentationDeckPanel
+                fileName={presentationFileName}
+                sourcePptUrl={presentationSourceUrl}
+                slides={presentationSlides}
+                currentPage={presentationCurrentPage}
+                totalPages={presentationTotalPages}
+                isUploading={isUploadingPresentation}
+                uploadMessage={presentationUploadMessage}
+                onFileChange={handlePresentationFileChange}
+                onCurrentPageChange={setPresentationCurrentPage}
+              />
+
+              <div className="practice-page__script-column">
+                <FeedbackScriptPanel
+                  title={practiceTitle}
+                  script={displayedFeedbackReport.script}
+                  issues={displayedFeedbackReport.issues}
+                />
+              </div>
+            </>
+          ) : stage === "record-finished" ? (
             <>
               <FeedbackScriptPanel
                 title={practiceTitle}
