@@ -188,6 +188,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const [transcript, setTranscript] = useState("");
   const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
+  const isIntentionalCloseRef = useRef(false);
 
   const sendControl = useCallback((type: "pause" | "resume" | "stop") => {
     const socket = socketRef.current;
@@ -200,12 +201,14 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
     const socket = socketRef.current;
 
     if (socket && socket.readyState === WS_READY_OPEN) {
+      isIntentionalCloseRef.current = true;
       socket.send(JSON.stringify({ type: "stop" }));
-      socket.close();
+      socket.close(1000, "practice stopped");
     }
 
     socketRef.current = null;
     setStatus("idle");
+    setErrorMessage(null);
     setHighlight(null);
     setLastReadIndex(-1);
     setWordFeedbackByIndex({});
@@ -234,6 +237,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
         setWordFeedbackByIndex({});
         setTranscript("");
         setIsAnalysisComplete(false);
+        isIntentionalCloseRef.current = false;
 
         let isReadyReceived = false;
         const socket = new WebSocket(finalWsUrl);
@@ -242,6 +246,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
 
         const timeoutId = setTimeout(() => {
           if (!isReadyReceived) {
+            isIntentionalCloseRef.current = true;
             socket.close();
             const err = "분석 서버 연결 준비 시간이 초과되었습니다.";
             setStatus("error");
@@ -286,6 +291,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
                 }
                 setStatus("error");
                 setErrorMessage(payload.message || "STT 서버 오류");
+                isIntentionalCloseRef.current = true;
                 socket.close();
                 return;
               }
@@ -323,6 +329,8 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
         };
 
         socket.onerror = () => {
+          if (isIntentionalCloseRef.current || socketRef.current !== socket) return;
+
           if (!isReadyReceived) {
             clearTimeout(timeoutId);
             reject(new Error("WebSocket Connection Failed"));
@@ -336,6 +344,10 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
           if (socketRef.current === socket) {
             socketRef.current = null;
             setStatus((prev) => (prev === "error" ? "error" : "idle"));
+          }
+
+          if (isIntentionalCloseRef.current) {
+            isIntentionalCloseRef.current = false;
           }
         };
       });
