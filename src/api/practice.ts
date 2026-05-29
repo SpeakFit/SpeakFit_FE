@@ -44,14 +44,24 @@ export type InputPracticeInfoRequest = {
 export type SpeechStyle = {
   styleId: number;
   styleType?: StyleType;
+  displayName?: string;
   description: string;
   guideAudioUrl?: string;
   sampleAudioUrl?: string;
+  targetMetrics?: PracticeTargetMetrics;
   isRecommended?: boolean;
 };
 
 type SpeechStylesResponse = {
   styles?: SpeechStyle[];
+};
+
+export type PracticeTargetMetrics = {
+  targetWpm?: number;
+  targetPitch?: number;
+  targetIntensity?: number;
+  targetZcr?: number;
+  targetPauseRatio?: number;
 };
 
 export type InputPracticeInfoResponse = {
@@ -69,6 +79,8 @@ export type PracticeContentItem = {
 export type SelectPracticeStyleResponse = {
   practiceId: number;
   styleType: StyleType;
+  displayName?: string;
+  targetMetrics?: PracticeTargetMetrics;
   contentList: PracticeContentItem[];
 };
 

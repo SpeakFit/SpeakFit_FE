@@ -495,6 +495,8 @@ export default function PracticePage() {
   const [practiceSentences, setPracticeSentences] = useState<StartPracticeSentence[]>([]);
   const [practiceContent, setPracticeContent] = useState<PracticeContentItem[]>([]);
   const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
+  const [selectedSpeechStyleId, setSelectedSpeechStyleId] =
+    useState<SpeechStyleId | null>(null);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [analysisStatusMessage, setAnalysisStatusMessage] = useState<string | null>(
@@ -563,8 +565,7 @@ export default function PracticePage() {
         if (!isMounted) return;
 
         const content = script.content || routeState?.scriptContent || SCRIPT_TEXT;
-        const nextMarkedScript =
-          script.markedContent || script.marked_content || content;
+        const nextMarkedScript = script.markedContent || content;
 
         setPracticeTitle(script.title || routeState?.scriptTitle || "Title");
         setPracticeScript(content);
@@ -745,6 +746,7 @@ export default function PracticePage() {
 
     try {
       await selectPracticeStyle(practiceId, styleId);
+      setSelectedSpeechStyleId(styleId);
       setStage("ready");
     } catch (error) {
       const message =
@@ -844,6 +846,12 @@ export default function PracticePage() {
       return;
     }
 
+    if (isPresentationMode && !selectedSpeechStyleId) {
+      setPracticeError("스피치 스타일을 선택한 뒤 녹음을 시작해 주세요.");
+      setStage("style-modal");
+      return;
+    }
+
     setPracticeError(null);
     setAnalysisStatusMessage(null);
     setFeedbackReport(null);
@@ -852,6 +860,10 @@ export default function PracticePage() {
     setIsSubmittingPractice(true);
 
     try {
+      if (isPresentationMode && selectedSpeechStyleId) {
+        await selectPracticeStyle(practiceId, selectedSpeechStyleId);
+      }
+
       const startRes = await requestStartPractice(practiceId);
 
       setPracticeSentences(startRes.sentences);
