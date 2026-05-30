@@ -573,3 +573,217 @@
     width: 100%;
   }
 }
+
+/* ========================================
+   스크립트 생성 중 - 인라인 스켈레톤
+   ======================================== */
+
+.script-editor-skeleton {
+  flex: 1;
+  padding: 18px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.script-editor-skeleton__lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.script-editor-skeleton__bar {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #eef0f3 0%,
+    #f7f8fa 50%,
+    #eef0f3 100%
+  );
+  background-size: 200% 100%;
+  animation: script-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes script-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.script-editor-skeleton__status {
+  margin-top: 24px;
+  padding: 14px 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #48b0a9;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.26px;
+}
+
+.script-editor-skeleton__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.script-editor-skeleton__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #48b0a9;
+  animation: script-skeleton-dot 1.2s infinite ease-in-out;
+}
+
+.script-editor-skeleton__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.script-editor-skeleton__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes script-skeleton-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* 우측 generator panel 헤더의 "생성 중 ..." pill */
+.script-generator-panel__status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #b8e6e2;
+  color: #0f6e56;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.22px;
+  animation: script-skeleton-pill-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes script-skeleton-pill-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+/* ========================================
+   스크립트 최적화 중 - 모달
+   ======================================== */
+
+.script-optimizing-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: script-optimizing-modal-fade 180ms ease-out;
+}
+
+@keyframes script-optimizing-modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.script-optimizing-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 28, 36, 0.4);
+}
+
+.script-optimizing-modal__panel {
+  position: relative;
+  min-width: 280px;
+  max-width: 360px;
+  padding: 28px 32px 24px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  font-family: "SUIT", sans-serif;
+}
+
+.script-optimizing-modal__spinner {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 6px;
+  border: 3px solid #e6f4f2;
+  border-top-color: #48b0a9;
+  border-radius: 50%;
+  animation: script-optimizing-modal-spin 0.9s linear infinite;
+}
+
+@keyframes script-optimizing-modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.script-optimizing-modal__title {
+  margin: 0;
+  color: #2c2c2c;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 140%;
+  letter-spacing: -0.3px;
+}
+
+.script-optimizing-modal__desc {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 150%;
+  letter-spacing: -0.24px;
+}
+
+.script-optimizing-modal__cancel-btn {
+  margin-top: 12px;
+  height: 30px;
+  padding: 0 18px;
+  border: 1px solid #d9dde6;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b6b6b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.script-optimizing-modal__cancel-btn:hover {
+  background: #f2f3f8;
+  color: #2c2c2c;
+}

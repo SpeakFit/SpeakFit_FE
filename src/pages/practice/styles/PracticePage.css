@@ -49,12 +49,6 @@
   align-items: start;
 }
 
-.practice-page__main-grid--presentation {
-  grid-template-columns: minmax(520px, 1.35fr) minmax(360px, 0.95fr);
-  gap: 32px;
-  align-items: stretch;
-}
-
 .practice-page__right-column {
   display: flex;
   flex-direction: column;
@@ -1687,31 +1681,6 @@
 }
 
 @media (max-width: 900px) {
-  .practice-page__content {
-    padding: 28px 20px 36px;
-  }
-
-  .practice-page__title {
-    font-size: 40px;
-  }
-
-  .practice-page__main-grid,
-  .practice-page__main-grid--presentation,
-  .practice-page__main-grid--feedback {
-    grid-template-columns: 1fr;
-  }
-
-  .presentation-deck,
-  .practice-page__script-column .script-panel,
-  .script-panel {
-    height: auto;
-    min-height: 560px;
-  }
-
-  .presentation-deck__source {
-    grid-template-columns: 1fr;
-  }
-
   .practice-modal {
     max-width: 92vw;
     border-radius: 24px;
@@ -1769,4 +1738,79 @@
   .practice-style-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ========================================
+   실시간 피드백 - 분석 결과 대기 스켈레톤
+   FeedbackEditorSkeleton, FeedbackSkeleton과 동일한 시각 언어 사용
+   ======================================== */
+
+.practice-skeleton__bar {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #eef0f3 0%,
+    #f7f8fa 50%,
+    #eef0f3 100%
+  );
+  background-size: 200% 100%;
+  animation: practice-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes practice-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 목표치 일치도 게이지 - shimmer 효과를 stroke에 직접 입히는 대신
+   path 위에 dasharray로 부분만 칠한 후 opacity 펄스 */
+.practice-skeleton__gauge-shimmer {
+  stroke: #d8dde3;
+  stroke-dasharray: 80 320;
+  animation: practice-skeleton-gauge-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes practice-skeleton-gauge-pulse {
+  0%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.5;
+  }
+  50% {
+    stroke-dashoffset: -120;
+    opacity: 1;
+  }
+}
+
+/* 게이지 중앙 텍스트 자리의 큰 값 bar */
+.practice-skeleton__bar--gauge-value {
+  width: 80px;
+  height: 32px;
+  margin-top: 4px;
+}
+
+.practice-skeleton__summary {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.practice-skeleton__metric-card {
+  pointer-events: none;
+  cursor: default;
+}
+
+.practice-skeleton__metric-card .feedback-metric-card__top {
+  margin-bottom: 0;
+}
+
+.practice-skeleton__tip-card {
+  pointer-events: none;
 }
