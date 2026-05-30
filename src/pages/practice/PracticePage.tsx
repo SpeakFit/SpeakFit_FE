@@ -537,6 +537,7 @@ export default function PracticePage() {
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const reportRequestedRef = useRef(false);
   const reportPollTokenRef = useRef(0);
+  const presentationUploadTokenRef = useRef(0)
   const realtime = usePracticeRealtime();
   const isPresentationMode = activeTab === "프레젠테이션 모드";
 
@@ -569,6 +570,7 @@ export default function PracticePage() {
   useEffect(() => {
     return () => {
       reportPollTokenRef.current += 1;
+      presentationUploadTokenRef.current += 1;
       previewAudioRef.current?.pause();
     };
   }, []);
@@ -786,6 +788,10 @@ export default function PracticePage() {
       return;
     }
 
+    // 이번 업로드 작업의 토큰. 언마운트되거나 새 업로드가 시작되면
+    // presentationUploadTokenRef가 바뀌어 이 작업의 후속 state 갱신을 막는다.
+    const token = ++presentationUploadTokenRef.current;
+
     setPresentationFileName(file.name);
     setPresentationSlides([]);
     setPresentationSourceUrl(undefined);
@@ -798,6 +804,7 @@ export default function PracticePage() {
     try {
       // 1) 업로드 요청 → 즉시 PROCESSING 응답
       await uploadPpt(scriptId, file);
+      if (presentationUploadTokenRef.current !== token) return;
 
       // 2) 변환 완료될 때까지 폴링 (최대 3분, 3초 간격)
       const POLL_INTERVAL_MS = 3000;
@@ -814,6 +821,7 @@ export default function PracticePage() {
 
       while (Date.now() <= deadline) {
         await new Promise((resolve) => window.setTimeout(resolve, POLL_INTERVAL_MS));
+        if (presentationUploadTokenRef.current !== token) return;
 
         setPresentationUploadMessage(
           POLLING_MESSAGES[pollCount % POLLING_MESSAGES.length],
@@ -821,6 +829,8 @@ export default function PracticePage() {
         pollCount++;
 
         const statusRes = await getPptStatus(scriptId);
+        if (presentationUploadTokenRef.current !== token) return;
+
         const pptStatus = statusRes.pptStatus?.toUpperCase?.() ?? statusRes.pptStatus;
 
         if (pptStatus === "COMPLETED") {
@@ -843,6 +853,8 @@ export default function PracticePage() {
 
       throw new Error("변환이 예상보다 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
     } catch (error) {
+      if (presentationUploadTokenRef.current !== token) return;
+
       const message =
         error instanceof Error
           ? error.message
@@ -851,7 +863,9 @@ export default function PracticePage() {
       setPresentationUploadMessage(null);
       setPresentationFileName(null);
     } finally {
-      setIsUploadingPresentation(false);
+      if (presentationUploadTokenRef.current === token) {
+        setIsUploadingPresentation(false);
+      }
     }
   };
 
