@@ -499,9 +499,7 @@ export default function PracticePage() {
     routeState?.scriptContent || SCRIPT_TEXT,
   );
   const [stage, setStage] = useState<PracticeStage>("intro-modal");
-  const [activeTab, setActiveTab] = useState<string>(
-    routeState?.initialTab ?? PRACTICE_TABS[0],
-  );
+  const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(
     routeState?.introForm ?? initialForm
   );

@@ -123,8 +123,6 @@ const getGeneratedContent = (response: GeneratedScriptResponse) => {
   return content;
 };
 
-const PRACTICE_MODES = ["스피치 모드", "프레젠테이션 모드"] as const;
-type PracticeMode = (typeof PRACTICE_MODES)[number];
 
 const ScriptPage = () => {
   const navigate = useNavigate();
@@ -137,7 +135,6 @@ const ScriptPage = () => {
     "idle"
   );
   const [errorMessage, setErrorMessage] = useState("");
-  const [selectedMode, setSelectedMode] = useState<PracticeMode>("스피치 모드");
 
   const selectedScript = useMemo(
     () => scripts.find((item) => item.id === selectedId) ?? null,
@@ -382,7 +379,6 @@ const ScriptPage = () => {
           speechType: selectedScript.purpose,
           duration: selectedScript.duration.trim(),
         },
-        initialTab: selectedMode,
       };
 
       sessionStorage.setItem(
@@ -403,19 +399,6 @@ const ScriptPage = () => {
       <div className="script-page__frame">
         <section className="script-page__header">
           <h1 className="script-page__title">발표 대본 리스트</h1>
-
-          <div className="script-page__tab-wrap">
-            {PRACTICE_MODES.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={`script-page__tab${selectedMode === mode ? " script-page__tab--active" : ""}`}
-                onClick={() => setSelectedMode(mode)}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section
@@ -706,9 +689,7 @@ const ScriptPage = () => {
                 disabled={isSubmitting || !canStartPractice}
                 onClick={handleStartPractice}
               >
-                {isSubmitting
-                  ? "처리 중..."
-                  : `${selectedMode}으로 연습 시작`}
+                {isSubmitting ? "처리 중..." : "연습 시작"}
               </button>
             )}
           </div>
