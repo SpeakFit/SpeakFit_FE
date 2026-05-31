@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
+import PresentationDeckPanel from "./components/PresentationDeckPanel";
 import MetricCard from "../../components/common/MetricCard/MetricCard";
 import RecordButton from "./components/RecordButton";
 import FeedbackMetricsPanel from "./components/FeedbackMetricsPanel";
@@ -24,7 +25,8 @@ import {
   type PracticeSentenceResponse,
   type SpeechStyle,
 } from "../../api/practice";
-import { getScript } from "../../api/scripts";
+import { getScript, uploadPpt, getPptStatus, type PptSlideResponse } from "../../api/scripts";
+
 import type {
   FeedbackIssue,
   FeedbackMetric,
@@ -353,9 +355,14 @@ function getSortedSentences(sentences: PracticeSentenceResponse[] = []) {
   return [...sentences].sort((a, b) => a.index - b.index);
 }
 
+function getSortedStartSentences(sentences: StartPracticeSentence[] = []) {
+  return [...sentences].sort((a, b) => a.sentenceIndex - b.sentenceIndex);
+}
+
 function getSentenceExcerpt(
   sentences: PracticeSentenceResponse[],
   issue: PracticeIssueResponse,
+  fallbackSentences: StartPracticeSentence[] = [],
 ) {
   if (issue.sentenceText) return issue.sentenceText;
 
@@ -365,27 +372,44 @@ function getSentenceExcerpt(
     );
 
     if (sentence) return sentence.text ?? sentence.originalText ?? "";
+
+    const fallbackSentence = fallbackSentences.find(
+      (item) => item.scriptSentenceId === issue.scriptSentenceId,
+    );
+
+    if (fallbackSentence) {
+      return fallbackSentence.originalText ?? fallbackSentence.normalizedText ?? "";
+    }
   }
 
   const sentenceIndex = issue.sentenceIndex ?? issue.startIndex;
 
-  if (sentenceIndex === undefined || sentences.length === 0) return "";
+  if (sentenceIndex === undefined) return "";
 
   const sentence =
     sentences.find((item) => item.index === sentenceIndex) ??
     sentences.find((item) => item.index === sentenceIndex + 1) ??
     sentences.find((item) => item.index === sentenceIndex - 1);
 
-  return sentence?.text ?? sentence?.originalText ?? "";
+  if (sentence) return sentence.text ?? sentence.originalText ?? "";
+
+  const fallbackSentence =
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex) ??
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex + 1) ??
+    fallbackSentences.find((item) => item.sentenceIndex === sentenceIndex - 1);
+
+  return fallbackSentence?.originalText ?? fallbackSentence?.normalizedText ?? "";
 }
 
 function mapPracticeReport(
   report: PracticeReportResponse,
   fallbackScript: string,
+  fallbackSentences: StartPracticeSentence[] = [],
 ): PracticeFeedbackReport {
   const analysis = report.analysis;
   const aiAnalysis = report.aiAnalysis;
   const sentences = getSortedSentences(report.sentences);
+  const startSentences = getSortedStartSentences(fallbackSentences);
   const scriptFromSentences = sentences
     .map((sentence) => normalizeScriptLine(sentence.text ?? sentence.originalText))
     .filter(Boolean)
@@ -436,7 +460,7 @@ function mapPracticeReport(
     report.practiceIssues && report.practiceIssues.length > 0
       ? report.practiceIssues.map((issue, index): FeedbackIssue => ({
           metricId: mapIssueMetricId(issue, index),
-          excerpt: getSentenceExcerpt(sentences, issue),
+          excerpt: getSentenceExcerpt(sentences, issue, startSentences),
           title: issue.issueSummary ?? "상세 피드백",
           description:
             issue.feedbackContent ??
@@ -491,6 +515,8 @@ export default function PracticePage() {
   const [practiceSentences, setPracticeSentences] = useState<StartPracticeSentence[]>([]);
   const [practiceContent, setPracticeContent] = useState<PracticeContentItem[]>([]);
   const [speechStyles, setSpeechStyles] = useState<SpeechStyle[]>([]);
+  const [selectedSpeechStyleId, setSelectedSpeechStyleId] =
+    useState<SpeechStyleId | null>(null);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [analysisStatusMessage, setAnalysisStatusMessage] = useState<string | null>(
@@ -500,10 +526,20 @@ export default function PracticePage() {
   const [isFetchingReport, setIsFetchingReport] = useState(false);
   const [feedbackReport, setFeedbackReport] =
     useState<PracticeFeedbackReport | null>(null);
+  const [presentationFileName, setPresentationFileName] = useState<string | null>(null);
+  const [presentationSourceUrl, setPresentationSourceUrl] = useState<string | undefined>();
+  const [presentationSlides, setPresentationSlides] = useState<PptSlideResponse[]>([]);
+  const [presentationUploadMessage, setPresentationUploadMessage] =
+    useState<string | null>(null);
+  const [isUploadingPresentation, setIsUploadingPresentation] = useState(false);
+  const [presentationCurrentPage, setPresentationCurrentPage] = useState(1);
+  const [presentationTotalPages, setPresentationTotalPages] = useState(1);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const reportRequestedRef = useRef(false);
   const reportPollTokenRef = useRef(0);
+  const presentationUploadTokenRef = useRef(0)
   const realtime = usePracticeRealtime();
+  const isPresentationMode = activeTab === "프레젠테이션 모드";
 
   const isIntroComplete = useMemo(() => {
     const durationNumber = Number(introForm.duration);
@@ -534,6 +570,7 @@ export default function PracticePage() {
   useEffect(() => {
     return () => {
       reportPollTokenRef.current += 1;
+      presentationUploadTokenRef.current += 1;
       previewAudioRef.current?.pause();
     };
   }, []);
@@ -550,12 +587,28 @@ export default function PracticePage() {
         if (!isMounted) return;
 
         const content = script.content || routeState?.scriptContent || SCRIPT_TEXT;
-        const nextMarkedScript =
-          script.markedContent || script.marked_content || content;
+        const nextMarkedScript = script.markedContent || content;
 
         setPracticeTitle(script.title || routeState?.scriptTitle || "Title");
         setPracticeScript(content);
         setMarkedScript(nextMarkedScript);
+
+        // 기존 업로드된 PPT 정보가 있다면 상태 업데이트
+        if (script.pptInfo) {
+          const { pptUrl, sourcePptUrl, totalSlides, slides } = script.pptInfo;
+          const finalPptUrl = pptUrl || sourcePptUrl;
+
+          setPresentationSlides(slides || []);
+          setPresentationSourceUrl(finalPptUrl);
+          setPresentationTotalPages(totalSlides || slides?.length || 1);
+          setPresentationCurrentPage(1);
+
+          // S3 URL 등에서 파일명 추출 (확장자 포함 마지막 부분)
+          if (finalPptUrl) {
+            const fileName = finalPptUrl.split("/").pop() || "기존 업로드 자료";
+            setPresentationFileName(decodeURIComponent(fileName));
+          }
+        }
       } catch (error) {
         if (!isMounted) return;
 
@@ -715,6 +768,7 @@ export default function PracticePage() {
 
     try {
       await selectPracticeStyle(practiceId, styleId);
+      setSelectedSpeechStyleId(styleId);
       setStage("ready");
     } catch (error) {
       const message =
@@ -727,9 +781,108 @@ export default function PracticePage() {
     }
   };
 
+  const handlePresentationFileChange = async (file: File | null) => {
+    if (!file) return;
+    if (!scriptId) {
+      setPracticeError("프레젠테이션을 연결할 대본 정보가 없습니다.");
+      return;
+    }
+
+    // 이번 업로드 작업의 토큰. 언마운트되거나 새 업로드가 시작되면
+    // presentationUploadTokenRef가 바뀌어 이 작업의 후속 state 갱신을 막는다.
+    const token = ++presentationUploadTokenRef.current;
+
+    setPresentationFileName(file.name);
+    setPresentationSlides([]);
+    setPresentationSourceUrl(undefined);
+    setPresentationCurrentPage(1);
+    setPresentationTotalPages(1);
+    setPresentationUploadMessage("프레젠테이션 파일을 업로드하고 있습니다.");
+    setPracticeError(null);
+    setIsUploadingPresentation(true);
+
+    try {
+      // 1) 업로드 요청 → 즉시 PROCESSING 응답
+      await uploadPpt(scriptId, file);
+      if (presentationUploadTokenRef.current !== token) return;
+
+      // 2) 변환 완료될 때까지 폴링 (최대 3분, 3초 간격)
+      const POLL_INTERVAL_MS = 3000;
+      const POLL_TIMEOUT_MS = 180_000;
+      const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+      const POLLING_MESSAGES = [
+        "슬라이드를 분석하고 있습니다...",
+        "이미지로 변환하고 있습니다...",
+        "슬라이드를 생성하고 있습니다...",
+        "마무리하고 있습니다...",
+      ];
+      let pollCount = 0;
+
+      while (Date.now() <= deadline) {
+        await new Promise((resolve) => window.setTimeout(resolve, POLL_INTERVAL_MS));
+        if (presentationUploadTokenRef.current !== token) return;
+
+        setPresentationUploadMessage(
+          POLLING_MESSAGES[pollCount % POLLING_MESSAGES.length],
+        );
+        pollCount++;
+
+        const statusRes = await getPptStatus(scriptId);
+        if (presentationUploadTokenRef.current !== token) return;
+
+        const pptStatus = statusRes.pptStatus?.toUpperCase?.() ?? statusRes.pptStatus;
+
+        if (pptStatus === "COMPLETED") {
+          const slides = statusRes.pptInfo?.slides ?? [];
+          const totalSlides = statusRes.pptInfo?.totalSlides ?? slides.length;
+          setPresentationSlides(slides);
+          setPresentationSourceUrl(statusRes.pptInfo?.sourcePptUrl);
+          setPresentationTotalPages(Math.max(1, totalSlides || 1));
+          setPresentationCurrentPage(1);
+          setPresentationUploadMessage("프레젠테이션 파일 변환이 완료되었습니다.");
+          return;
+        }
+
+        if (pptStatus === "FAILED") {
+          throw new Error(statusRes.message ?? "PPT 변환에 실패했습니다.");
+        }
+
+        // PROCESSING 이면 계속 폴링
+      }
+
+      throw new Error("변환이 예상보다 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
+    } catch (error) {
+      if (presentationUploadTokenRef.current !== token) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "프레젠테이션 파일 업로드에 실패했습니다.";
+      setPracticeError(message);
+      setPresentationUploadMessage(null);
+      setPresentationFileName(null);
+    } finally {
+      if (presentationUploadTokenRef.current === token) {
+        setIsUploadingPresentation(false);
+      }
+    }
+  };
+
   const startRecording = async () => {
     if (!practiceId) {
       setPracticeError("연습 정보가 저장되지 않았습니다. 다시 시도해 주세요.");
+      return;
+    }
+
+    if (isPresentationMode && presentationSlides.length === 0) {
+      setPracticeError("프레젠테이션 파일을 업로드하고 변환된 슬라이드를 확인해 주세요.");
+      return;
+    }
+
+    if (isPresentationMode && !selectedSpeechStyleId) {
+      setPracticeError("스피치 스타일을 선택한 뒤 녹음을 시작해 주세요.");
+      setStage("style-modal");
       return;
     }
 
@@ -742,9 +895,28 @@ export default function PracticePage() {
 
     try {
       const startRes = await requestStartPractice(practiceId);
-      
+
       setPracticeSentences(startRes.sentences);
       setPracticeContent(startRes.contentList);
+
+      // 스크립트에 연결된 PPT 슬라이드가 있고, 아직 수동 업로드를 하지 않은 경우 자동으로 채운다
+      if (
+        startRes.scriptType === "PPT" &&
+        startRes.slides &&
+        startRes.slides.length > 0 &&
+        presentationSlides.length === 0
+      ) {
+        const mappedSlides = startRes.slides.map((s) => ({
+          page: s.slideIndex,
+          imageUrl: s.imageUrl,
+        }));
+        setPresentationSlides(mappedSlides);
+        setPresentationTotalPages(mappedSlides.length);
+        setPresentationCurrentPage(1);
+        if (!presentationFileName) {
+          setPresentationFileName(practiceTitle);
+        }
+      }
 
       const durationNumber = Number(introForm.duration);
       const maxSeconds = durationNumber * 60;
@@ -803,7 +975,7 @@ export default function PracticePage() {
         const reportStatus = normalizePracticeStatus(report.status);
 
         if (reportStatus === "ANALYZED") {
-          setFeedbackReport(mapPracticeReport(report, practiceScript));
+          setFeedbackReport(mapPracticeReport(report, practiceScript, practiceSentences));
           setActiveFeedbackMetric(null);
           setAnalysisStatusMessage(null);
           setStage("record-finished");
@@ -868,6 +1040,21 @@ export default function PracticePage() {
     }
   };
 
+  const handleRetryRecording = async () => {
+    reportPollTokenRef.current += 1;
+    reportRequestedRef.current = false;
+    realtime.disconnect();
+    setFeedbackReport(null);
+    setActiveFeedbackMetric(null);
+    setAnalysisStatusMessage(null);
+    setPracticeError(null);
+    setIsFetchingReport(false);
+    setElapsedSeconds(0);
+    setNextTriggerTime(Number(introForm.duration) * 60);
+
+    await startRecording();
+  };
+
   const displayedFeedbackReport = feedbackReport ?? {
     ...DEFAULT_FEEDBACK_REPORT,
     script: practiceScript,
@@ -886,15 +1073,41 @@ export default function PracticePage() {
 
         <section
           className={`practice-page__main-grid ${
-            stage === "record-finished" ? "practice-page__main-grid--feedback" : ""
-          }`}
+            stage === "record-finished" || stage === "analyzing"
+              ? "practice-page__main-grid--feedback"
+              : ""
+          } ${isPresentationMode ? "practice-page__main-grid--presentation" : ""}`}
         >
-          {stage === "record-finished" ? (
+          {(stage === "record-finished" || stage === "analyzing") && isPresentationMode ? (
+            <>
+              <PresentationDeckPanel
+                fileName={presentationFileName}
+                sourcePptUrl={presentationSourceUrl}
+                slides={presentationSlides}
+                currentPage={presentationCurrentPage}
+                totalPages={presentationTotalPages}
+                isUploading={isUploadingPresentation}
+                uploadMessage={presentationUploadMessage}
+                onFileChange={handlePresentationFileChange}
+                onCurrentPageChange={setPresentationCurrentPage}
+              />
+
+              <div className="practice-page__script-column">
+                <FeedbackScriptPanel
+                  title={practiceTitle}
+                  script={displayedFeedbackReport.script}
+                  issues={stage === "analyzing" ? [] : displayedFeedbackReport.issues}
+                  isAwaitingAnalysis={stage === "analyzing"}
+                />
+              </div>
+            </>
+          ) : stage === "record-finished" || stage === "analyzing" ? (
             <>
               <FeedbackScriptPanel
                 title={practiceTitle}
                 script={displayedFeedbackReport.script}
-                issues={displayedFeedbackReport.issues}
+                issues={stage === "analyzing" ? [] : displayedFeedbackReport.issues}
+                isAwaitingAnalysis={stage === "analyzing"}
               />
 
               <FeedbackMetricsPanel
@@ -904,46 +1117,84 @@ export default function PracticePage() {
                 summary={displayedFeedbackReport.summary}
                 tip={displayedFeedbackReport.tip}
                 onSelectMetric={setActiveFeedbackMetric}
+                isLoading={stage === "analyzing"}
               />
             </>
           ) : (
             <>
-              <ScriptPanel
-                title={practiceTitle}
-                script={practiceScript}
-                markedScript={markedScript}
-                sentences={practiceSentences}
-                contentList={practiceContent}
-                lastReadIndex={realtime.lastReadIndex}
-                wordFeedbackByIndex={realtime.wordFeedbackByIndex}
-                time={formattedTime}
-                isRecording={isRecording}
-                statusText={recordingStatusText}
-                isReadingMarksEnabled={isReadingMarksEnabled}
-                realtimeHighlight={realtime.highlight}
-                realtimeTranscript={realtime.transcript}
-                onToggleReadingMarks={setIsReadingMarksEnabled}
-              />
+              {isPresentationMode ? (
+                <>
+                  <PresentationDeckPanel
+                    fileName={presentationFileName}
+                    sourcePptUrl={presentationSourceUrl}
+                    slides={presentationSlides}
+                    currentPage={presentationCurrentPage}
+                    totalPages={presentationTotalPages}
+                    isUploading={isUploadingPresentation}
+                    uploadMessage={presentationUploadMessage}
+                    onFileChange={handlePresentationFileChange}
+                    onCurrentPageChange={setPresentationCurrentPage}
+                  />
 
-              <div className="practice-page__right-column">
-                <MetricCard
-                  title="발화 속도"
-                  value={speechRateDisplay}
-                  unit="WPM"
-                  description="녹음 중 실시간 발화 속도가 표시됩니다."
-                  tone="mint"
-                  level={speechRateLevel}
-                />
+                  <div className="practice-page__script-column">
+                    <ScriptPanel
+                      title={practiceTitle}
+                      script={practiceScript}
+                      markedScript={markedScript}
+                      sentences={practiceSentences}
+                      contentList={practiceContent}
+                      lastReadIndex={realtime.lastReadIndex}
+                      wordFeedbackByIndex={realtime.wordFeedbackByIndex}
+                      time={formattedTime}
+                      isRecording={isRecording}
+                      statusText={recordingStatusText}
+                      isReadingMarksEnabled={isReadingMarksEnabled}
+                      realtimeHighlight={realtime.highlight}
+                      realtimeTranscript={realtime.transcript}
+                      onToggleReadingMarks={setIsReadingMarksEnabled}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ScriptPanel
+                    title={practiceTitle}
+                    script={practiceScript}
+                    markedScript={markedScript}
+                    sentences={practiceSentences}
+                    contentList={practiceContent}
+                    lastReadIndex={realtime.lastReadIndex}
+                    wordFeedbackByIndex={realtime.wordFeedbackByIndex}
+                    time={formattedTime}
+                    isRecording={isRecording}
+                    statusText={recordingStatusText}
+                    isReadingMarksEnabled={isReadingMarksEnabled}
+                    realtimeHighlight={realtime.highlight}
+                    realtimeTranscript={realtime.transcript}
+                    onToggleReadingMarks={setIsReadingMarksEnabled}
+                  />
 
-                <MetricCard
-                  title="목소리 크기"
-                  value={String(volumeLevel)}
-                  unit="dB"
-                  description="녹음 중 실시간으로 표시됩니다."
-                  tone="red"
-                  level={volumeLevel}
-                />
-              </div>
+                  <div className="practice-page__right-column">
+                    <MetricCard
+                      title="발화 속도"
+                      value={speechRateDisplay}
+                      unit="WPM"
+                      description="녹음 중 실시간 발화 속도가 표시됩니다."
+                      tone="mint"
+                      level={speechRateLevel}
+                    />
+
+                    <MetricCard
+                      title="목소리 크기"
+                      value={String(volumeLevel)}
+                      unit="dB"
+                      description="녹음 중 실시간으로 표시됩니다."
+                      tone="red"
+                      level={volumeLevel}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
         </section>
@@ -967,12 +1218,19 @@ export default function PracticePage() {
             <>
               <button
                 className="practice-page__btn practice-page__btn--sub"
+                type="button"
                 onClick={pauseRecording}
               >
                 일시정지
               </button>
 
-              <RecordButton onClick={handleFinishRecord} />
+              <button
+                className="practice-page__btn practice-page__btn--primary"
+                type="button"
+                onClick={handleFinishRecord}
+              >
+                녹음 완료
+              </button>
             </>
           )}
 
@@ -980,6 +1238,7 @@ export default function PracticePage() {
             <>
               <button
                 className="practice-page__btn practice-page__btn--sub"
+                type="button"
                 onClick={resumeRecording}
               >
                 녹음 재개
@@ -987,9 +1246,10 @@ export default function PracticePage() {
 
               <button
                 className="practice-page__btn practice-page__btn--primary"
+                type="button"
                 onClick={handleFinishRecord}
               >
-                발표 완료
+                녹음 완료
               </button>
             </>
           )}
@@ -998,9 +1258,10 @@ export default function PracticePage() {
             <button
               className="practice-page__btn practice-page__btn--primary"
               type="button"
-              disabled
+              aria-busy={isFetchingReport}
+              onClick={handleRetryRecording}
             >
-              {isFetchingReport ? "결과 분석 중" : "분석 준비 중"}
+              재녹음하기
             </button>
           )}
         </div>

@@ -16,7 +16,10 @@ export type ScriptResponse = {
   title: string;
   content: string;
   markedContent?: string;
-  marked_content?: string;
+  scriptType?: "PPT" | "TEXT";
+  pptStatus?: string;
+  pptErrorMessage?: string;
+  pptInfo?: PptInfoResponse;
   createdAt?: string;
 };
 
@@ -55,14 +58,29 @@ export type PatchScriptResponse = {
   id: number;
   title: string;
   content: string;
-  updatedAt: string;
 };
 
-export type InputPracticeInfoRequest = {
-  audienceType: AudienceAgeCode;
-  audienceUnderstanding: AudienceLevelCode;
-  speechInformation: SpeechTypeCode;
-  targetTime: number;
+export type DeleteScriptResponse = {
+  id: number;
+};
+
+export type PptSlideResponse = {
+  page: number;
+  imageUrl: string;
+};
+
+export type PptInfoResponse = {
+  pptUrl?: string;
+  sourcePptUrl?: string;
+  totalSlides?: number;
+  slides?: PptSlideResponse[];
+};
+
+export type UploadPptResponse = {
+  scriptId: number;
+  pptStatus?: string;
+  message?: string;
+  pptInfo?: PptInfoResponse;
 };
 
 export async function getScripts() {
@@ -86,7 +104,7 @@ export async function addScript(payload: AddScriptRequest) {
 }
 
 export async function deleteScript(scriptId: number) {
-  const { data } = await api.delete<ApiResponse<ScriptResponse>>(`/api/scripts/${scriptId}`);
+  const { data } = await api.delete<ApiResponse<DeleteScriptResponse>>(`/api/scripts/${scriptId}`);
 
   return unwrapResponse(data, "대본 삭제에 실패했습니다.");
 }
@@ -118,14 +136,22 @@ export async function patchScript(scriptId: number, payload: PatchScriptRequest)
   return unwrapResponse(data, "대본 수정에 실패했습니다.");
 }
 
-export async function inputPracticeInfo(
-  scriptId: number,
-  payload: InputPracticeInfoRequest
-) {
-  const { data } = await api.post<ApiResponse<ScriptResponse>>(
-    `/api/scripts/${scriptId}`,
-    payload
+export async function uploadPpt(scriptId: number, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await api.patch<ApiResponse<UploadPptResponse>>(
+    `/api/scripts/${scriptId}/ppt`,
+    formData,
   );
 
-  return unwrapResponse(data, "발표 연습 정보를 저장하지 못했습니다.");
+  return unwrapResponse(data, "프레젠테이션 파일 업로드에 실패했습니다.");
+}
+
+export async function getPptStatus(scriptId: number) {
+  const { data } = await api.get<ApiResponse<UploadPptResponse>>(
+    `/api/scripts/${scriptId}/ppt/status`,
+  );
+
+  return unwrapResponse(data, "PPT 변환 상태를 확인하지 못했습니다.");
 }
