@@ -96,13 +96,9 @@ function toFriendlyErrorMessage(error: unknown): string {
     return "서버에 일시적인 문제가 있어요. 잠시 후 다시 시도해 주세요.";
   }
 
-  // 기타 - 메시지가 영어 기술 메시지이면 일반 안내로 대체
+  // 기타 - 기술적인 원본 메시지를 그대로 노출하지 않고 일반 안내로 통일
   if (error instanceof Error) {
-    const msg = error.message;
-    if (msg.includes("Request failed") || msg.includes("Network Error")) {
-      return "피드백을 불러오는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.";
-    }
-    return msg;
+    return "피드백을 불러오는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.";
   }
   return "피드백을 불러오지 못했어요.";
 }
