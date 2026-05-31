@@ -27,7 +27,7 @@ export default function LandingHeader() {
 
         <nav className="landing-header__nav">
           <a href="#feature">발표 연습</a>
-          <a href="#feedback">피드백</a>
+          <Link to={ROUTES.FEEDBACK}>피드백</Link>
         </nav>
 
         <div className="landing-header__actions">

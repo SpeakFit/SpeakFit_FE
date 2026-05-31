@@ -21,6 +21,15 @@ export type FeedbackTrendSeries = {
   points: { sessionLabel: string; date: string; value: number }[];
 };
 
+// AI 분석 리포트의 두 섹션(잘하고 있는 점 / 보완이 필요한 점)
+export type FeedbackAnalysisSection = {
+  kind: "positive" | "improvement";
+  icon: string;     // ✅ or ⚠️
+  heading: string;  // "잘하고 있는 점" / "보완이 필요한 점"
+  title: string | null;        // 백엔드 positiveFeedback.title
+  description: string | null;  // 백엔드 positiveFeedback.description (줄바꿈 보존)
+};
+
 function parseLeadingNumber(text: string | null | undefined): number | null {
   if (!text) return null;
   const match = text.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
@@ -57,7 +66,14 @@ function classify(kind: MetricKind, value: number | null): MetricStatus {
       if (value > 180) return "높음";
       return "보통";
     case "hz":
-      // §7: 성인 발화 절대 범위 80~450Hz (개인 Baseline 도입 전 임시)
+      // §7 정의: "Baseline 대비 ±20%" — 본래 개인 Baseline 기준 상대 비교가 정답.
+      // 그러나 현재 응답에 baseline이 없어 부득이 절대값 기반 임시 분류 사용.
+      // 가이드 §3 발표 스타일 평균 Pitch 분포(남성 125~190Hz, 여성 188~276Hz)를
+      // 참고해 일상 발표 평균 부근(약 130~250Hz)을 "보통"으로 잡음.
+      // ※ §7의 "80~450Hz"는 성인 음성의 물리적 한계이지 분류 임계값이 아님.
+      //   해당 범위로 임계값을 잡으면 거의 모든 사용자가 "보통"으로 분류되어
+      //   배지 분류가 무의미해지므로 사용하지 않음.
+      // TODO: baseline 응답 추가되면 Baseline×0.8 / Baseline×1.2 로 교체
       if (value < 130) return "낮음";
       if (value > 250) return "높음";
       return "보통";
@@ -195,23 +211,27 @@ export function mapFeedbackResponse(response: FeedbackDetailCompleted) {
   const hasImprovement =
     !!ar?.improvementFeedback?.title || !!ar?.improvementFeedback?.description;
 
-  const analysisLines: string[] = [];
+  // 페이지에서 두 섹션을 각각 카드로 렌더하기 위한 구조화된 데이터.
+  // description은 줄바꿈을 보존해 전달하므로, AI가 본문에 1/2/3 등 구조를
+  // 넣어 보내면 페이지에서 그대로 렌더 가능.
+  const analysisSections: FeedbackAnalysisSection[] = [];
   if (hasPositive) {
-    analysisLines.push(
-      `✅ 잘하고 있는 점 — ${ar.positiveFeedback.title ?? ""}`.trim()
-    );
-    if (ar.positiveFeedback.description) {
-      analysisLines.push(ar.positiveFeedback.description);
-    }
+    analysisSections.push({
+      kind: "positive",
+      icon: "✅",
+      heading: "잘하고 있는 점",
+      title: ar.positiveFeedback.title ?? null,
+      description: ar.positiveFeedback.description ?? null,
+    });
   }
   if (hasImprovement) {
-    if (analysisLines.length > 0) analysisLines.push("");
-    analysisLines.push(
-      `⚠️ 보완이 필요한 점 — ${ar.improvementFeedback.title ?? ""}`.trim()
-    );
-    if (ar.improvementFeedback.description) {
-      analysisLines.push(ar.improvementFeedback.description);
-    }
+    analysisSections.push({
+      kind: "improvement",
+      icon: "⚠️",
+      heading: "보완이 필요한 점",
+      title: ar.improvementFeedback.title ?? null,
+      description: ar.improvementFeedback.description ?? null,
+    });
   }
 
   return {
@@ -281,7 +301,7 @@ export function mapFeedbackResponse(response: FeedbackDetailCompleted) {
       toSeries("zcr", "발음", "%", g?.zcr),
     ] as FeedbackTrendSeries[],
 
-    analysisReport: analysisLines.length > 0 ? analysisLines.join("\n") : null,
+    analysisSections,
 
     summaryReport: [
       response.practiceGuide?.summary ?? "",

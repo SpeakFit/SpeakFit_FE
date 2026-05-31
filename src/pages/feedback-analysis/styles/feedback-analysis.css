@@ -208,8 +208,10 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* 아래 줄도 위와 같은 3등분 그리드 - 카드 두 장은 1,2번째 컬럼만 차지.
+   이렇게 해야 위/아래 카드의 너비가 동일하게 정렬됨. */
 .feedback-analysis-page__metric-grid--bottom {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .feedback-analysis__metric-card {
@@ -235,22 +237,23 @@
 .feedback-analysis__metric-value-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  min-height: 32px;
+  gap: 6px;
+  min-height: 40px;
 }
 
 .feedback-analysis__metric-value {
   font-family: "SUIT", "Pretendard", sans-serif;
   font-weight: 700;
-  font-size: 24px;
+  font-size: 32px;
   line-height: 1.1;
   color: #21272a;
+  letter-spacing: -0.5px;
 }
 
 .feedback-analysis__metric-unit {
   font-family: "SUIT", "Pretendard", sans-serif;
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   line-height: 1.1;
   color: #21272a;
 }
@@ -260,7 +263,7 @@
   min-height: 22px;
   font-family: "SUIT", "Pretendard", sans-serif;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.4;
   color: #697077;
 }
@@ -282,7 +285,7 @@
 
 .feedback-analysis__badge--low {
   background: #fff6d9;
-  color: #ff3d00;
+  color: #d97706;
 }
 
 .feedback-analysis__badge--normal {
@@ -496,9 +499,9 @@
 }
 
 .feedback-analysis-page__summary-index {
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
   border-radius: 20px;
   background: #ecfdf8;
   display: inline-flex;
@@ -507,7 +510,7 @@
   flex-shrink: 0;
   font-family: "Inter", sans-serif;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   color: #059669;
 }
@@ -586,4 +589,442 @@
   .feedback-analysis-page__subtitle {
     font-size: 15px;
   }
+}
+
+/* ============================================
+   스켈레톤 로딩
+   ============================================ */
+
+@keyframes feedback-skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.feedback-skeleton {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 공통: 회색 박스 + 깜빡임 */
+.feedback-skeleton__line,
+.feedback-skeleton__chip,
+.feedback-skeleton__matrix,
+.feedback-skeleton__metric-card,
+.feedback-skeleton__chart,
+.feedback-skeleton__banner,
+.feedback-skeleton__style-card,
+.feedback-skeleton__chart-card,
+.feedback-skeleton__report-card,
+.feedback-skeleton__summary-card {
+  background: #e7ebf0;
+  border-radius: 8px;
+  animation: feedback-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* 카드 배경은 흰색 + 안의 요소는 회색 */
+.feedback-skeleton__banner,
+.feedback-skeleton__style-card,
+.feedback-skeleton__chart-card,
+.feedback-skeleton__report-card,
+.feedback-skeleton__summary-card {
+  background: #ffffff;
+  border-radius: 30px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* 카드 자체는 깜빡임 없음 - 안의 회색 박스만 깜빡임 */
+  animation: none;
+}
+
+.feedback-skeleton__banner {
+  height: 130px;
+}
+
+/* 본문 2단 레이아웃 */
+.feedback-skeleton__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.feedback-skeleton__style-card {
+  height: 720px;
+  gap: 16px;
+}
+
+.feedback-skeleton__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 메트릭 카드 5장 그리드 */
+.feedback-skeleton__metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.feedback-skeleton__metric-card {
+  height: 150px;
+  border-radius: 30px;
+  background: #eef1f5;
+}
+
+/* 차트 카드 */
+.feedback-skeleton__chart-card {
+  height: 380px;
+}
+
+.feedback-skeleton__chart {
+  flex: 1;
+  border-radius: 16px;
+}
+
+.feedback-skeleton__report-card {
+  min-height: 280px;
+}
+
+.feedback-skeleton__summary-card {
+  min-height: 180px;
+}
+
+/* 라인(텍스트 자리) 변형 */
+.feedback-skeleton__line {
+  height: 14px;
+  border-radius: 6px;
+}
+
+.feedback-skeleton__line--title {
+  height: 38px;
+  width: 40%;
+  border-radius: 8px;
+}
+
+.feedback-skeleton__line--subtitle {
+  height: 14px;
+  width: 60%;
+}
+
+.feedback-skeleton__line--heading {
+  height: 24px;
+  width: 30%;
+  border-radius: 8px;
+}
+
+.feedback-skeleton__line--short {
+  width: 30%;
+}
+
+.feedback-skeleton__line--medium {
+  width: 55%;
+}
+
+.feedback-skeleton__line--full {
+  width: 100%;
+}
+
+.feedback-skeleton__chip {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 110px;
+  height: 28px;
+  border-radius: 20px;
+}
+
+.feedback-skeleton__banner {
+  position: relative;
+}
+
+/* 좌측 스타일 카드 - 2x2 매트릭스 자리 */
+.feedback-skeleton__matrix {
+  width: 100%;
+  height: 380px;
+  border-radius: 20px;
+}
+
+/* 반응형 - 좁은 화면에서 1단으로 */
+@media (max-width: 1100px) {
+  .feedback-skeleton__top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feedback-skeleton__metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .feedback-skeleton__style-card {
+    height: auto;
+    min-height: 500px;
+  }
+}
+
+/* ============================================
+   에러 / 분석중 띠 (페이지 본문 위가 아니라 카드형으로)
+   ============================================ */
+
+.feedback-status-card {
+  background: #ffffff;
+  border-radius: 30px;
+  padding: 24px 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.feedback-status-card--info {
+  color: #475569;
+  border-left: 4px solid #35c6a7;
+}
+
+.feedback-status-card--error {
+  color: #b91c1c;
+  border-left: 4px solid #ef4444;
+}
+
+/* ============================================
+   상태 뷰 (에러 / 분석 중) - 빈 카드들 대신 한 장만
+   ============================================ */
+
+.feedback-state-view {
+  background: #ffffff;
+  border-radius: 30px;
+  min-height: 320px;
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.feedback-state-view__icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.feedback-state-view__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #21272a;
+}
+
+.feedback-state-view__description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #64748b;
+  max-width: 560px;
+}
+
+.feedback-state-view--error .feedback-state-view__title {
+  color: #b91c1c;
+}
+
+
+/* ============================================
+   AI 분석 리포트 — positive / improvement 두 섹션
+   ============================================ */
+
+.feedback-report-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.feedback-report-section {
+  border-radius: 20px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 잘하고 있는 점 - 녹색 톤 */
+.feedback-report-section--positive {
+  background: #f0fdf4;
+  border-left: 4px solid #10b981;
+}
+
+/* 보완이 필요한 점 - 노란/주황 톤 */
+.feedback-report-section--improvement {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+}
+
+.feedback-report-section__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feedback-report-section__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.feedback-report-section__heading {
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #21272a;
+}
+
+.feedback-report-section__title {
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: #475569;
+}
+
+.feedback-report-section__description {
+  margin: 0;
+  font-family: "Inter", "Noto Sans KR", "Pretendard", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+  /* 줄바꿈 보존 — AI가 본문에 1/2/3 형식 넣어 보내면 자동 표시됨 */
+  white-space: pre-wrap;
+}
+
+/* ============================================
+   발표별 변화 추이 - 꺾은선 차트 (recharts)
+   ============================================ */
+
+.feedback-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+/* 지표 토글 칩들 */
+.feedback-trend-chart__toggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feedback-trend-chart__toggle {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.feedback-trend-chart__toggle:hover {
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+.feedback-trend-chart__toggle--active {
+  background: #d1fae5;
+  border-color: #d1fae5;
+  color: #21272a;
+  font-weight: 600;
+}
+
+/* 차트 캔버스 영역 */
+.feedback-trend-chart__canvas {
+  width: 100%;
+  height: 320px;
+}
+
+.feedback-trend-chart__empty {
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #f8fafc;
+  border-radius: 16px;
+}
+
+/* ============================================
+   발표 스타일 2x2 매트릭스
+   ============================================ */
+
+.feedback-matrix {
+  width: 100%;
+  margin: 8px 0 4px;
+}
+
+.feedback-matrix__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.feedback-matrix__quad-title {
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  fill: #475569;
+}
+
+.feedback-matrix__quad-sub {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 10px;
+  fill: #94a3b8;
+}
+
+.feedback-matrix__axis {
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-weight: 500;
+  font-size: 10px;
+  fill: #94a3b8;
+}
+
+.feedback-matrix__empty {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* 스타일 카드 헤더의 범례 */
+.feedback-analysis-page__style-legend {
+  font-family: "SUIT", "Pretendard", sans-serif;
+  font-size: 13px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feedback-analysis-page__style-legend::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  display: inline-block;
+}
+
+.feedback-analysis-page__style-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
