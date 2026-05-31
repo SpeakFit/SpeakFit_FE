@@ -4,7 +4,13 @@
  */
 export default function FeedbackSkeleton() {
   return (
-    <div className="feedback-skeleton" aria-label="피드백을 불러오는 중">
+    <div
+      className="feedback-skeleton"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="피드백을 불러오는 중"
+    >
       {/* 상단 배너 영역 */}
       <div className="feedback-skeleton__banner">
         <div className="feedback-skeleton__line feedback-skeleton__line--title" />

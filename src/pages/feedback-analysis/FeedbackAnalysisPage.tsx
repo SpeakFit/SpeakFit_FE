@@ -156,12 +156,52 @@ export default function FeedbackAnalysisPage() {
 
   useEffect(() => {
     let isMounted = true;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
     const formatDate = (date: Date) => {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
       const d = String(date.getDate()).padStart(2, "0");
       return `${y}-${m}-${d}`;
+    };
+
+    // 분석 진행 중일 때 재조회 간격(ms)과 최대 시도 횟수
+    const POLL_INTERVAL = 5000;
+    const MAX_POLLS = 24; // 약 2분 (5s * 24)
+
+    // 진행중(ANALYZING/GENERATING) 상태를 받은 feedbackId를 주기적으로 재조회
+    const pollDetail = (feedbackId: number, attempt: number) => {
+      pollTimer = setTimeout(async () => {
+        if (!isMounted) return;
+        try {
+          const detail = await getFeedbackDetail(feedbackId);
+          if (!isMounted) return;
+
+          if (detail.status === "COMPLETED") {
+            setStatusMessage(null);
+            setFeedbackData(
+              mapFeedbackResponse(detail as FeedbackDetailCompleted)
+            );
+          } else if (detail.status === "FAILED") {
+            setStatusMessage(null);
+            setErrorMessage(
+              (detail as { message?: string }).message ||
+                "피드백 분석에 실패했습니다. 잠시 후 다시 시도해주세요."
+            );
+          } else if (attempt + 1 >= MAX_POLLS) {
+            // 시간 초과 - 그만 폴링하고 안내
+            setStatusMessage(
+              "분석이 예상보다 오래 걸리고 있어요. 잠시 후 페이지를 새로고침해 주세요."
+            );
+          } else {
+            // 여전히 진행중 - 다음 폴링 예약
+            pollDetail(feedbackId, attempt + 1);
+          }
+        } catch (error) {
+          if (!isMounted) return;
+          setErrorMessage(toFriendlyErrorMessage(error));
+        }
+      }, POLL_INTERVAL);
     };
 
     const load = async () => {
@@ -189,11 +229,12 @@ export default function FeedbackAnalysisPage() {
               "피드백 분석에 실패했습니다. 잠시 후 다시 시도해주세요."
           );
         } else {
-          // ANALYZING, GENERATING 등
+          // ANALYZING, GENERATING 등 - 안내 메시지 + 주기적 재조회 시작
           setStatusMessage(
             (detail as { message?: string }).message ||
-              "AI가 최근 연습 기록을 분석 중이에요. 잠시 후 다시 시도해주세요."
+              "AI가 최근 연습 기록을 분석 중이에요. 잠시만 기다려 주세요."
           );
+          pollDetail(created.feedbackId, 0);
         }
       } catch (error) {
         if (!isMounted) return;
@@ -207,6 +248,7 @@ export default function FeedbackAnalysisPage() {
 
     return () => {
       isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, []);
 

@@ -69,13 +69,13 @@ function classify(kind: MetricKind, value: number | null): MetricStatus {
       // §7 정의: "Baseline 대비 ±20%" — 본래 개인 Baseline 기준 상대 비교가 정답.
       // 그러나 현재 응답에 baseline이 없어 부득이 절대값 기반 임시 분류 사용.
       // 가이드 §3 발표 스타일 평균 Pitch 분포(남성 125~190Hz, 여성 188~276Hz)를
-      // 참고해 일상 발표 평균 부근(약 130~250Hz)을 "보통"으로 잡음.
+      // 참고해 그 분포 범위(약 130~276Hz)를 "보통"으로 잡음.
       // ※ §7의 "80~450Hz"는 성인 음성의 물리적 한계이지 분류 임계값이 아님.
       //   해당 범위로 임계값을 잡으면 거의 모든 사용자가 "보통"으로 분류되어
       //   배지 분류가 무의미해지므로 사용하지 않음.
       // TODO: baseline 응답 추가되면 Baseline×0.8 / Baseline×1.2 로 교체
       if (value < 130) return "낮음";
-      if (value > 250) return "높음";
+      if (value > 276) return "높음";
       return "보통";
     case "zcr":
       // 백엔드 스케일(0~100) 기준 임시 임계값.

@@ -44,6 +44,7 @@ export default function FeedbackTrendChart({ series }: Props) {
             <button
               key={s.key}
               type="button"
+              aria-pressed={s.key === activeKey}
               className={`feedback-trend-chart__toggle ${
                 s.key === activeKey
                   ? "feedback-trend-chart__toggle--active"
@@ -74,6 +75,7 @@ export default function FeedbackTrendChart({ series }: Props) {
           <button
             key={s.key}
             type="button"
+            aria-pressed={s.key === activeKey}
             className={`feedback-trend-chart__toggle ${
               s.key === activeKey ? "feedback-trend-chart__toggle--active" : ""
             }`}
