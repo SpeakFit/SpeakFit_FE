@@ -535,6 +535,7 @@ export default function PracticePage() {
   const [presentationCurrentPage, setPresentationCurrentPage] = useState(1);
   const [presentationTotalPages, setPresentationTotalPages] = useState(1);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingStyleId, setPlayingStyleId] = useState<SpeechStyleId | null>(null);
   const reportRequestedRef = useRef(false);
   const reportPollTokenRef = useRef(0);
   const presentationUploadTokenRef = useRef(0)
@@ -748,13 +749,28 @@ export default function PracticePage() {
   };
 
   const handlePreviewStyleTts = (styleId: SpeechStyleId) => {
+    // 같은 스타일 버튼을 다시 누르면 정지
+    if (playingStyleId === styleId) {
+      previewAudioRef.current?.pause();
+      previewAudioRef.current = null;
+      setPlayingStyleId(null);
+      return;
+    }
+
     const style = speechStyles.find((item) => item.styleId === styleId);
     const audioUrl = style?.guideAudioUrl ?? style?.sampleAudioUrl;
     if (!audioUrl) return;
 
     previewAudioRef.current?.pause();
-    previewAudioRef.current = new Audio(audioUrl);
-    void previewAudioRef.current.play();
+    const audio = new Audio(audioUrl);
+    previewAudioRef.current = audio;
+    setPlayingStyleId(styleId);
+
+    audio.addEventListener("ended", () => {
+      setPlayingStyleId(null);
+    });
+
+    void audio.play();
   };
 
   const handleConfirmStyle = async (styleId: SpeechStyleId) => {
@@ -1296,6 +1312,7 @@ export default function PracticePage() {
             isLoading={isSubmittingPractice}
             errorMessage={stylesError}
             onPreviewTts={handlePreviewStyleTts}
+            playingStyleId={playingStyleId}
             onRetry={handleConfirmIntro}
             onConfirm={handleConfirmStyle}
           />

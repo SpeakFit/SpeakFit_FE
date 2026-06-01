@@ -30,6 +30,7 @@ type PracticeStyleModalProps = {
   isLoading: boolean;
   errorMessage: string | null;
   onPreviewTts?: (styleId: SpeechStyleId) => void;
+  playingStyleId?: SpeechStyleId | null;
   onRetry: () => void;
   onConfirm: (styleId: SpeechStyleId) => void;
 };
@@ -39,6 +40,7 @@ export default function PracticeStyleModal({
   isLoading,
   errorMessage,
   onPreviewTts,
+  playingStyleId,
   onRetry,
   onConfirm,
 }: PracticeStyleModalProps) {
@@ -145,20 +147,24 @@ export default function PracticeStyleModal({
                   >
                     <button
                       type="button"
-                      className="practice-style-card__speaker"
-                      aria-label={`${option.title} TTS 듣기`}
+                      className={`practice-style-card__speaker${playingStyleId === option.id ? " is-playing" : ""}`}
+                      aria-label={playingStyleId === option.id ? `${option.title} TTS 정지` : `${option.title} TTS 듣기`}
+                      aria-pressed={playingStyleId === option.id}
                       onClick={() => handlePreviewTts(option.id)}
                       disabled={!option.sampleAudioUrl}
                     >
-                      <svg
-                        viewBox="0 0 32 32"
-                        aria-hidden="true"
-                        focusable="false"
-                      >
-                        <path d="M5 12.5h5l7-6v19l-7-6H5z" />
-                        <path d="M21 11.5c2 2.4 2 6.6 0 9" />
-                        <path d="M25 8c3.8 4.4 3.8 11.6 0 16" />
-                      </svg>
+                      {playingStyleId === option.id ? (
+                        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                          <rect x="8" y="8" width="5" height="16" />
+                          <rect x="19" y="8" width="5" height="16" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                          <path d="M5 12.5h5l7-6v19l-7-6H5z" />
+                          <path d="M21 11.5c2 2.4 2 6.6 0 9" />
+                          <path d="M25 8c3.8 4.4 3.8 11.6 0 16" />
+                        </svg>
+                      )}
                     </button>
 
                     {option.isRecommended && (
