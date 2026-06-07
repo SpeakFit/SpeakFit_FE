@@ -1,0 +1,40 @@
+name: Apply SayUpAI final migration
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/apply-sayupai2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ github.token }}
+
+      - name: Apply final SayUpAI payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://files.manuscdn.com/user_upload_by_module/session_file/310519663723575982/yNDVIpEErNIvQylc.gz" -o /tmp/sayupai_final_payload.tar.gz
+          tar -xzf /tmp/sayupai_final_payload.tar.gz -C .
+          rm -f src/assets/speakfit-logo-color.png src/assets/speakfit-logo.png
+          rm -f .github/workflows/apply-sayupai.yml .github/workflows/apply-sayupai2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Rebrand site to SayUpAI and update Pages domain"
+            git push origin HEAD:main
+          fi
