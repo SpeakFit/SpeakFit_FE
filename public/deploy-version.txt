@@ -1,0 +1,3 @@
+SayUpAI deployment trigger
+Updated: 2026-06-07T07:45:30+09:00
+Purpose: trigger GitHub Pages rebuild after SayUpAI source migration.
