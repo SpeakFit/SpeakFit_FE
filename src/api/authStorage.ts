@@ -1,5 +1,5 @@
-export const ACCESS_TOKEN_KEY = "speakfit_access_token";
-export const USER_KEY = "speakfit_user";
+export const ACCESS_TOKEN_KEY = "sayupai_access_token";
+export const USER_KEY = "sayupai_user";
 
 export type StoredUserInfo = {
   userId: number;

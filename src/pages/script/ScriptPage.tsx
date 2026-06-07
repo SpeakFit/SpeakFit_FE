@@ -60,7 +60,7 @@ const PURPOSE_CODE_MAP: Record<Exclude<Purpose, "">, SpeechTypeCode> = {
   "피드백 연습": "FEEDBACKPRACTICE",
 };
 
-const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
+const PRACTICE_ROUTE_STATE_KEY = "sayupai_practice_route_state";
 
 const GUIDE_PLACEHOLDER = `발표 대본을 작성해요.
 

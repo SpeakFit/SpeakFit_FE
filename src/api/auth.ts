@@ -10,7 +10,7 @@ import type { UploadVoiceProfileResponse } from "./voice";
 import type { ApiResponse } from "./response";
 import { unwrapResponse } from "./response";
 
-const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "speakfit_voice_onboarding_seen";
+const VOICE_ONBOARDING_SEEN_KEY_PREFIX = "sayupai_voice_onboarding_seen";
 
 export type SignUpRequest = {
   email: string;

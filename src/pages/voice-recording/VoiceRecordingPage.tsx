@@ -5,7 +5,7 @@ import { getStoredUser, saveVoiceOnboardingResult } from "../../api/auth";
 import { uploadVoiceProfileRecording } from "../../api/voice";
 import PracticeHeader from "../../components/common/Header/PracticeHeader";
 import useAudioMeter from "../practice/hooks/useAudioMeter";
-import logoIcon from "../../assets/speakfit-logo.png";
+import logoIcon from "../../assets/sayupai-logo.png";
 import "./styles/voice-recording.css";
 
 type VoicePageState =
@@ -233,8 +233,8 @@ export default function VoiceRecordingPage() {
         <section className="voice-recording-card">
           <div className="voice-recording-card__body">
             <div className="voice-recording-card__brand">
-              <img src={logoIcon} alt="Speakfit icon" />
-              <span>Speakfit</span>
+              <img src={logoIcon} alt="SayUpAI icon" />
+              <span>SayUpAI</span>
             </div>
 
             <h1 className="voice-recording-card__title">

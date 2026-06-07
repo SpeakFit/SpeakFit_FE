@@ -41,7 +41,7 @@ function parseLeadingNumber(text: string | null | undefined): number | null {
 // ───────────────────────────────────────────────
 // 임계값 기반 상태/코멘트 (UI 보강용 - 백엔드에 없는 필드)
 //
-// 근거: SpeakFit 알고리즘 가이드 §6 Gold Standard, §7 Threshold Specs
+// 근거: SayUpAI 알고리즘 가이드 §6 Gold Standard, §7 Threshold Specs
 //   WPM   : §7 글로벌 임계값  100 ~ 180
 //   Pitch : §7 성인 발화 절대 범위 80 ~ 450 Hz (개인 Baseline 미수신 시 절대범위 사용)
 //   dB    : §6, §7 (45 미만 / 80 초과 임계값, Gold Standard 63.72)

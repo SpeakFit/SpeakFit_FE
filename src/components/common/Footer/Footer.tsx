@@ -1,7 +1,7 @@
 import Container from "../../../components/Container";
 import "./Footer.css";
 import { Link } from "react-router-dom";
-import speakfitLogo from "../../../assets/speakfit-logo.png";
+import sayupaiLogo from "../../../assets/sayupai-logo.png";
 
 export default function FooterSection() {
   return (
@@ -11,9 +11,9 @@ export default function FooterSection() {
           <div className="landing-footer__left">
             <div className="landing-footer__brand">
               <div className="landing__logo">
-                <img src={speakfitLogo} alt="SpeakFit Logo" />
+                <img src={sayupaiLogo} alt="SayUpAI Logo" />
               </div>
-              <span className="landing-footer__name">SpeakFit</span>
+              <span className="landing-footer__name">SayUpAI</span>
             </div>
 
             <nav className="landing-footer__links">
@@ -36,7 +36,7 @@ export default function FooterSection() {
               문의: speakfit0123@gmail.com
             </a>
             <p className="landing-footer__copyright">
-              © 2024 SpeakFit. All rights reserved.
+              © 2024 SayUpAI. All rights reserved.
             </p>
           </div>
         </div>

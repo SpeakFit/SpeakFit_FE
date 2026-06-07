@@ -46,11 +46,11 @@ const initialForm: IntroFormState = {
 };
 
 const PRACTICE_TABS = ["스피치 모드", "프레젠테이션 모드"] as const;
-const PRACTICE_ROUTE_STATE_KEY = "speakfit_practice_route_state";
+const PRACTICE_ROUTE_STATE_KEY = "sayupai_practice_route_state";
 const REPORT_POLL_INTERVAL_MS = 2000;
 const REPORT_POLL_TIMEOUT_MS = 90000;
 
-const SCRIPT_TEXT = `안녕하세요. 저는 발표 연습을 돕는 서비스 SpeakFit을 개발하고 있는 팀입니다.
+const SCRIPT_TEXT = `안녕하세요. 저는 발표 연습을 돕는 서비스 SayUpAI을 개발하고 있는 팀입니다.
 오늘은 프로젝트의 기획 배경과 핵심 기능을 중심으로 발표드리겠습니다.
 
 발표를 준비할 때 많은 사람들은 내용 위주로만 연습하고,

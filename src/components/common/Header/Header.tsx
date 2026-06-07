@@ -1,6 +1,6 @@
 import "./Header.css";
 import { Link, useLocation } from "react-router-dom";
-import speakfitLogo from "../../../assets/speakfit-logo-color.png";
+import sayupaiLogo from "../../../assets/sayupai-logo-color.png";
 
 export default function Header() {
   const { pathname } = useLocation();
@@ -10,9 +10,9 @@ export default function Header() {
       <div className="app-header__inner">
         <Link to="/" className="app-header__brand" style={{ textDecoration: "none" }}>
           <div className="app-header__logo">
-            <img src={speakfitLogo} alt="SpeakFit Logo" />
+            <img src={sayupaiLogo} alt="SayUpAI Logo" />
           </div>
-          <span className="app-header__brand--name">SpeakFit</span>
+          <span className="app-header__brand--name">SayUpAI</span>
         </Link>
 
         <nav className="app-header__nav">

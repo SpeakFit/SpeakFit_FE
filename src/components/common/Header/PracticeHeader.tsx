@@ -2,7 +2,7 @@ import "./PracticeHeader.css";
 import { useMemo } from "react";
 import { clearAuthSession, getStoredUser } from "../../../api/auth";
 import { useNavigate, Link } from "react-router-dom";
-import speakfitLogo from "../../../assets/speakfit-logo-color.png";
+import sayupaiLogo from "../../../assets/sayupai-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
 import { ROUTES } from "../../../app/routes.const";
 
@@ -24,11 +24,11 @@ export default function PracticeHeader() {
         {/* LEFT */}
         <Link to={ROUTES.LANDING} className="practice-header__left" style={{ textDecoration: 'none' }}>
           <img
-            src={speakfitLogo}
-            alt="Speakfit"
+            src={sayupaiLogo}
+            alt="SayUpAI"
             className="practice-header__logo"
           />
-          <span className="practice-header__brand">Speakfit</span>
+          <span className="practice-header__brand">SayUpAI</span>
         </Link>
 
         <div className="practice-header__right">

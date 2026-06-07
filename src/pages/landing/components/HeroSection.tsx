@@ -17,7 +17,7 @@ export default function HeroSection() {
       <Container>
         <div className="hero__content">
           <h1 className="hero__title">
-            어떤 무대에서도 당당하게, SpeakFit과 함께
+            어떤 무대에서도 당당하게, SayUpAI과 함께
           </h1>
           <p
             className={`hero__description${
@@ -40,7 +40,7 @@ export default function HeroSection() {
           )}
         </div>
         <div className="hero__image">
-          <img src={heroImage} alt="SpeakFit 발표 분석 서비스" />
+          <img src={heroImage} alt="SayUpAI 발표 분석 서비스" />
         </div>
       </Container>
     </section>

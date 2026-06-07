@@ -3,7 +3,7 @@ import "../styles/header.css";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../app/routes.const";
 import { clearAuthSession, getStoredUser } from "../../../api/auth";
-import speakfitLogo from "../../../assets/speakfit-logo.png";
+import sayupaiLogo from "../../../assets/sayupai-logo.png";
 
 export default function LandingHeader() {
   const navigate = useNavigate();
@@ -20,9 +20,9 @@ export default function LandingHeader() {
       <Container className="landing-header__inner">
         <div className="landing-header__brand">
           <div className="landing-header__logo">
-            <img src={speakfitLogo} alt="SpeakFit Logo" />
+            <img src={sayupaiLogo} alt="SayUpAI Logo" />
           </div>
-          <span className="landing-header__name">Speakfit</span>
+          <span className="landing-header__name">SayUpAI</span>
         </div>
 
         <nav className="landing-header__nav">

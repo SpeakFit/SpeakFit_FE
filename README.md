@@ -1,7 +1,7 @@
-# 🎤 SpeakFit Frontend (SpeakFit_FE)
+# 🎤 SayUpAI Frontend (SayUpAI_FE)
 
-SpeakFit은 발표 연습 및 피드백을 제공하는 서비스입니다.  
-이 레포지토리는 **SpeakFit 웹 프론트엔드(React + Vite + TypeScript)**를 담당합니다.
+SayUpAI은 발표 연습 및 피드백을 제공하는 서비스입니다.  
+이 레포지토리는 **SayUpAI 웹 프론트엔드(React + Vite + TypeScript)**를 담당합니다.
 
 ---
 
