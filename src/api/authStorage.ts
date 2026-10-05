@@ -38,7 +38,7 @@ function decodeJwtPayload(token: string) {
   }
 }
 
-function isExpiredToken(token: string) {
+export function isExpiredToken(token: string) {
   const payload = decodeJwtPayload(token);
 
   if (!payload?.exp) return false;
@@ -46,19 +46,13 @@ function isExpiredToken(token: string) {
   return payload.exp * 1000 <= Date.now();
 }
 
+// 만료된 토큰도 그대로 반환한다.
+// 만료 처리는 api/http.ts 의 인터셉터가 담당한다. (리프레시 토큰으로 재발급, 실패하면 세션 종료)
 export function getStoredAccessToken() {
-  const token =
+  return (
     localStorage.getItem(ACCESS_TOKEN_KEY) ??
-    sessionStorage.getItem(ACCESS_TOKEN_KEY);
-
-  if (!token) return null;
-
-  if (isExpiredToken(token)) {
-    clearAuthSession();
-    return null;
-  }
-
-  return token;
+    sessionStorage.getItem(ACCESS_TOKEN_KEY)
+  );
 }
 
 export function getStoredUser() {
@@ -90,6 +84,15 @@ export function saveAuthSession(
 
   storage.setItem(ACCESS_TOKEN_KEY, accessToken);
   storage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+// 재발급받은 access 토큰으로 교체한다. (기존에 토큰이 저장된 저장소를 그대로 사용 -> 로그인 유지 설정 보존)
+export function updateStoredAccessToken(accessToken: string) {
+  const storage = localStorage.getItem(ACCESS_TOKEN_KEY)
+    ? localStorage
+    : sessionStorage;
+
+  storage.setItem(ACCESS_TOKEN_KEY, accessToken);
 }
 
 export function updateStoredUser(user: StoredUserInfo) {

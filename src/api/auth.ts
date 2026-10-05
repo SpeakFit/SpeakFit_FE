@@ -121,6 +121,17 @@ export function clearAuthSession() {
   clearStoredAuthSession();
 }
 
+// 서버의 리프레시 토큰(쿠키 포함)을 폐기한다. 서버 응답과 무관하게 클라이언트 세션은 항상 종료한다.
+export async function logout() {
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // 이미 만료되었거나 네트워크 오류여도 로그아웃은 계속 진행한다.
+  } finally {
+    clearStoredAuthSession();
+  }
+}
+
 function getVoiceOnboardingSeenKey(userId: number) {
   return `${VOICE_ONBOARDING_SEEN_KEY_PREFIX}_${userId}`;
 }
