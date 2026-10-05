@@ -1,7 +1,12 @@
 import "./styles/login.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login, needsVoiceOnboarding, saveAuthSession } from "../../api/auth";
+import {
+  hasSeenVoiceOnboarding,
+  login,
+  needsVoiceOnboarding,
+  saveAuthSession,
+} from "../../api/auth";
 import { ROUTES } from "../../app/routes.const";
 
 import EmailField from "./components/EmailField";
@@ -27,7 +32,7 @@ export default function LoginPage() {
       saveAuthSession(auth, keepLogin);
 
       navigate(
-        needsVoiceOnboarding(auth.user)
+        needsVoiceOnboarding(auth.user) && !hasSeenVoiceOnboarding()
           ? ROUTES.VOICE_RECORDING
           : ROUTES.LANDING,
         { replace: true }

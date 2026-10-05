@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./styles/PracticePage.css";
 import PracticeTabs from "./components/PracticeTabs";
 import ScriptPanel from "./components/ScriptPanel";
@@ -10,6 +10,7 @@ import FeedbackMetricsPanel from "./components/FeedbackMetricsPanel";
 import FeedbackScriptPanel from "./components/FeedbackScriptPanel";
 import PracticeIntroModal from "./components/PracticeIntroModal";
 import PracticeStyleModal from "./components/PracticeStyleModal";
+import VoiceAnalysisPromptModal from "./components/VoiceAnalysisPromptModal";
 import useAudioMeter from "./hooks/useAudioMeter";
 import usePracticeRealtime from "./hooks/usePracticeRealtime";
 import {
@@ -26,6 +27,13 @@ import {
   type SpeechStyle,
 } from "../../api/practice";
 import { getScript, uploadPpt, getPptStatus, type PptSlideResponse } from "../../api/scripts";
+import {
+  clearVoicePromptSkipped,
+  getStoredUser,
+  hasSkippedVoicePrompt,
+  isVoiceOnboardingRequired,
+} from "../../api/auth";
+import { ROUTES } from "../../app/routes.const";
 
 import type {
   FeedbackIssue,
@@ -486,8 +494,13 @@ function mapPracticeReport(
   };
 }
 
+// 음색 분석을 하지 않았고, 방금 음성 녹음 화면에서 건너뛰고 돌아온 경우가 아니면 안내 모달을 먼저 보여준다.
+const shouldPromptVoiceAnalysis = () =>
+  isVoiceOnboardingRequired(getStoredUser()) && !hasSkippedVoicePrompt();
+
 export default function PracticePage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const routeState =
     (location.state as PracticeRouteState | null) ?? getStoredPracticeRouteState();
   const scriptId = routeState?.scriptId ?? null;
@@ -498,7 +511,9 @@ export default function PracticePage() {
   const [markedScript, setMarkedScript] = useState(
     routeState?.scriptContent || SCRIPT_TEXT,
   );
-  const [stage, setStage] = useState<PracticeStage>("intro-modal");
+  const [stage, setStage] = useState<PracticeStage>(() =>
+    shouldPromptVoiceAnalysis() ? "voice-prompt" : "intro-modal",
+  );
   const [activeTab, setActiveTab] = useState<string>(PRACTICE_TABS[0]);
   const [introForm, setIntroForm] = useState<IntroFormState>(
     routeState?.introForm ?? initialForm
@@ -567,6 +582,11 @@ export default function PracticePage() {
   } = useAudioMeter({
     onAudioChunk: realtime.sendAudioChunk,
   });
+
+  // 건너뛰기 표시는 한 번 읽은 뒤 지운다. (다음에 연습 화면에 들어오면 다시 안내)
+  useEffect(() => {
+    clearVoicePromptSkipped();
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -682,7 +702,12 @@ export default function PracticePage() {
   }, [elapsedSeconds]);
 
   const recordingStatusText = useMemo(() => {
-    if (stage === "intro-modal" || stage === "style-modal" || stage === "ready")
+    if (
+      stage === "voice-prompt" ||
+      stage === "intro-modal" ||
+      stage === "style-modal" ||
+      stage === "ready"
+    )
       return "녹음 전";
     if (stage === "recording") return "녹음 중";
     if (stage === "paused") return "일시정지";
@@ -1295,6 +1320,17 @@ export default function PracticePage() {
           <p className="practice-page__recording-error">
             {realtime.errorMessage}
           </p>
+        )}
+
+        {stage === "voice-prompt" && (
+          <VoiceAnalysisPromptModal
+            onStartAnalysis={() =>
+              navigate(ROUTES.VOICE_RECORDING, {
+                state: { returnTo: ROUTES.PRACTICE },
+              })
+            }
+            onSkip={() => setStage("intro-modal")}
+          />
         )}
 
         {stage === "intro-modal" && (
