@@ -1,4 +1,5 @@
 export type PracticeStage =
+  | "voice-prompt"
   | "intro-modal"
   | "style-modal"
   | "ready"

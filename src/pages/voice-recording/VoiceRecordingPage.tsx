@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../app/routes.const";
-import { getStoredUser, saveVoiceOnboardingResult } from "../../api/auth";
+import {
+  getStoredUser,
+  markVoiceOnboardingSeen,
+  markVoicePromptSkipped,
+  saveVoiceOnboardingResult,
+} from "../../api/auth";
 import { uploadVoiceProfileRecording } from "../../api/voice";
 import PracticeHeader from "../../components/common/Header/PracticeHeader";
 import useAudioMeter from "../practice/hooks/useAudioMeter";
@@ -25,6 +30,17 @@ const DONE_MODAL_DESC_ID = "voice-recording-done-desc";
 const WARNING_MODAL_TITLE_ID = "voice-recording-warning-title";
 const WARNING_MODAL_DESC_ID = "voice-recording-warning-desc";
 
+// 다른 화면(연습 화면)에서 이 화면으로 왔을 때 돌아갈 경로. 허용된 경로만 인정한다.
+const RETURN_ROUTES: string[] = [ROUTES.PRACTICE, ROUTES.SCRIPT];
+
+const getReturnRoute = (state: unknown) => {
+  const returnTo = (state as { returnTo?: unknown } | null)?.returnTo;
+
+  return typeof returnTo === "string" && RETURN_ROUTES.includes(returnTo)
+    ? returnTo
+    : null;
+};
+
 const formatTime = (seconds: number) => {
   const h = Math.floor(seconds / 3600)
     .toString()
@@ -38,6 +54,8 @@ const formatTime = (seconds: number) => {
 
 export default function VoiceRecordingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = getReturnRoute(location.state);
   const [pageState, setPageState] = useState<VoicePageState>("default");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -215,14 +233,22 @@ export default function VoiceRecordingPage() {
     restoreTriggerFocus();
   };
 
-  const handleGoLanding = () => {
+  // "나중에 하기": 음색 분석 없이 진행한다. 연습 화면에서 왔다면 그곳으로, 아니면 대본 화면으로 이동한다.
+  const handleSkip = () => {
     restoreTriggerFocus();
-    navigate(ROUTES.LANDING, { replace: true });
+    markVoiceOnboardingSeen();
+
+    if (returnTo === ROUTES.PRACTICE) {
+      markVoicePromptSkipped();
+    }
+
+    navigate(returnTo ?? ROUTES.SCRIPT, { replace: true });
   };
 
-  const handleGoScript = () => {
+  // 분석 완료 후: 연습 화면에서 왔다면 그곳으로 돌아가고, 아니면 대본 화면으로 이동한다.
+  const handleGoNext = () => {
     restoreTriggerFocus();
-    navigate(ROUTES.SCRIPT, { replace: true });
+    navigate(returnTo ?? ROUTES.SCRIPT, { replace: true });
   };
 
   return (
@@ -403,9 +429,9 @@ export default function VoiceRecordingPage() {
             <button
               type="button"
               className="voice-recording-card__primary-btn"
-              onClick={handleGoScript}
+              onClick={handleGoNext}
             >
-              발표 연습 시작하기
+              {returnTo ? "발표 연습으로 돌아가기" : "발표 연습 시작하기"}
             </button>
           </div>
         </div>
@@ -455,7 +481,7 @@ export default function VoiceRecordingPage() {
             <button
               type="button"
               className="voice-recording-card__link-btn"
-              onClick={handleGoLanding}
+              onClick={handleSkip}
             >
               나중에 하기
             </button>

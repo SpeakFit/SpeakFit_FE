@@ -89,6 +89,15 @@ function withVoiceOnboardingStatus(user: StoredUserInfo): StoredUserInfo {
   };
 }
 
+// 로그인한 사용자가 음색 분석(기본 음색 등록)을 아직 하지 않았는지 여부
+export function isVoiceOnboardingRequired(user: StoredUserInfo | null) {
+  if (!user) {
+    return false;
+  }
+
+  return user.voiceOnboardingRequired ?? needsVoiceOnboarding(user);
+}
+
 export function saveAuthSession(auth: LoginResponse, keepLogin: boolean) {
   persistAuthSession(
     auth.accessToken,
@@ -154,4 +163,20 @@ export function markVoiceOnboardingSeen() {
   }
 
   localStorage.setItem(getVoiceOnboardingSeenKey(user.userId), "true");
+}
+
+// 음성 녹음 화면에서 "나중에 하기"를 눌러 연습 화면으로 돌아왔을 때,
+// 안내 모달이 곧바로 다시 뜨지 않도록 하는 1회성 표시 (탭을 닫으면 사라진다)
+const VOICE_PROMPT_SKIPPED_KEY = "speakfit_voice_prompt_skipped";
+
+export function markVoicePromptSkipped() {
+  sessionStorage.setItem(VOICE_PROMPT_SKIPPED_KEY, "true");
+}
+
+export function hasSkippedVoicePrompt() {
+  return sessionStorage.getItem(VOICE_PROMPT_SKIPPED_KEY) === "true";
+}
+
+export function clearVoicePromptSkipped() {
+  sessionStorage.removeItem(VOICE_PROMPT_SKIPPED_KEY);
 }
