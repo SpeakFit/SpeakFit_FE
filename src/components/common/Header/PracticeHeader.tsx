@@ -1,6 +1,6 @@
 import "./PracticeHeader.css";
 import { useMemo } from "react";
-import { clearAuthSession, getStoredUser } from "../../../api/auth";
+import { logout, getStoredUser } from "../../../api/auth";
 import { useNavigate, Link } from "react-router-dom";
 import speakfitLogo from "../../../assets/speakfit-logo-color.png";
 import userIcon from "../../../assets/user-icon.svg";
@@ -12,8 +12,8 @@ export default function PracticeHeader() {
   const user = useMemo(() => getStoredUser(), []);
   const displayName = user?.nickname?.trim() || "사용자";
 
-  const handleLogout = () => {
-    clearAuthSession();
+  const handleLogout = async () => {
+    await logout();
     navigate(ROUTES.LOGIN, { replace: true });
   };
 

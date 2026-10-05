@@ -2,7 +2,7 @@ import Container from "../../../components/Container";
 import "../styles/header.css";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../app/routes.const";
-import { clearAuthSession, getStoredUser } from "../../../api/auth";
+import { logout, getStoredUser } from "../../../api/auth";
 import speakfitLogo from "../../../assets/speakfit-logo.png";
 
 export default function LandingHeader() {
@@ -10,8 +10,8 @@ export default function LandingHeader() {
   const user = getStoredUser();
   const displayName = user?.nickname?.trim() || "사용자";
 
-  const handleLogout = () => {
-    clearAuthSession();
+  const handleLogout = async () => {
+    await logout();
     navigate(ROUTES.LOGIN, { replace: true });
   };
 
