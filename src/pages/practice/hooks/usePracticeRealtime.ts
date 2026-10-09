@@ -26,6 +26,8 @@ type RealtimeScriptWord = {
 type UsePracticeRealtimeResult = {
   status: RealtimeStatus;
   errorMessage: string | null;
+  /** 실시간 단어 인식 없이 녹음만 진행될 때의 안내 (오류가 아님) */
+  sttNotice: string | null;
   highlight: RealtimeHighlight | null;
   lastReadIndex: number;
   wordFeedbackByIndex: Record<number, WordRealtimeFeedback>;
@@ -36,6 +38,14 @@ type UsePracticeRealtimeResult = {
   sendControl: (type: "pause" | "resume" | "stop") => void;
   disconnect: () => void;
 };
+
+// 서버에서 실시간 STT 를 쓸 수 없을 때(비활성화/시작 실패)도 녹음과 사후 분석은 가능하다.
+const STT_UNAVAILABLE_NOTICES = {
+  sttDisabled:
+    "실시간 단어 인식이 꺼져 있어 녹음만 진행됩니다. 발표를 마치면 녹음을 분석해 결과를 보여 드려요.",
+  sttError:
+    "실시간 단어 인식을 시작하지 못해 녹음만 진행됩니다. 발표를 마치면 녹음을 분석해 결과를 보여 드려요.",
+} as const;
 
 const WS_READY_CONNECTING = 0;
 const WS_READY_OPEN = 1;
@@ -183,6 +193,7 @@ function parseRealtimeMessage(eventData: MessageEvent["data"]): RealtimeMessage 
 export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   const [status, setStatus] = useState<RealtimeStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sttNotice, setSttNotice] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<RealtimeHighlight | null>(null);
   const [lastReadIndex, setLastReadIndex] = useState<number>(-1);
   const [wordFeedbackByIndex, setWordFeedbackByIndex] = useState<Record<number, WordRealtimeFeedback>>({});
@@ -219,6 +230,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
 
     setStatus("idle");
     setErrorMessage(null);
+    setSttNotice(null);
     setHighlight(null);
     setLastReadIndex(-1);
     setWordFeedbackByIndex({});
@@ -242,6 +254,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
 
         setStatus("connecting");
         setErrorMessage(null);
+        setSttNotice(null);
         setHighlight(null);
         setLastReadIndex(-1);
         setWordFeedbackByIndex({});
@@ -290,9 +303,26 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
                 return;
               }
               
+              // 실시간 STT 를 쓸 수 없어도 연습(녹음, 일시정지, 완료, 사후 분석)은 계속할 수 있다.
+              // 연결을 오류로 처리하면 연습 단계가 되돌아가 버튼이 사라지므로 안내만 띄운다.
+              if (
+                payload.type === "sttDisabled" ||
+                (payload.type === "sttError" && !isReadyReceived)
+              ) {
+                clearTimeout(timeoutId);
+                setSttNotice(STT_UNAVAILABLE_NOTICES[payload.type as "sttDisabled" | "sttError"]);
+                setStatus("idle");
+                isIntentionalCloseRef.current = true;
+                socket.close();
+                if (!isReadyReceived) {
+                  isReadyReceived = true;
+                  resolve();
+                }
+                return;
+              }
+
               if (
                 payload.type === "sttError" ||
-                payload.type === "sttDisabled" ||
                 payload.type === "restartRequired"
               ) {
                 if (!isReadyReceived) {
@@ -379,6 +409,7 @@ export default function usePracticeRealtime(): UsePracticeRealtimeResult {
   return {
     status,
     errorMessage,
+    sttNotice,
     highlight,
     lastReadIndex,
     wordFeedbackByIndex,

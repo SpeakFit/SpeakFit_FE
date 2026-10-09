@@ -1321,6 +1321,11 @@ export default function PracticePage() {
             {realtime.errorMessage}
           </p>
         )}
+        {realtime.sttNotice && !realtime.errorMessage && (
+          <p className="practice-page__recording-notice" role="status">
+            {realtime.sttNotice}
+          </p>
+        )}
 
         {stage === "voice-prompt" && (
           <VoiceAnalysisPromptModal
