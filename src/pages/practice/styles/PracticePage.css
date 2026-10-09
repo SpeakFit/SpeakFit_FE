@@ -718,13 +718,29 @@
 .practice-page__recording-error {
   position: fixed;
   right: 40px;
-  bottom: 100px;
+  bottom: 150px; /* 녹음 버튼(92px) 위로 띄워 가려지지 않게 한다 */
   margin: 0;
   max-width: 320px;
   color: #d93025;
   font-size: 14px;
   line-height: 1.4;
   text-align: right;
+}
+
+.practice-page__recording-notice {
+  position: fixed;
+  right: 40px;
+  bottom: 150px;
+  z-index: 100;
+  margin: 0;
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f1f7f6;
+  color: #3a5a56;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 /* 공통 버튼 */
