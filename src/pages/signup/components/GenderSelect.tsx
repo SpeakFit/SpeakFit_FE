@@ -26,7 +26,6 @@ export default function GenderSelect({
         </option>
         <option value="male">남성</option>
         <option value="female">여성</option>
-        <option value="none">선택 안함</option>
       </select>
 
       {error && <p className="sf-error">{error}</p>}

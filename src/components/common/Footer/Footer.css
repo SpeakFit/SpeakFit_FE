@@ -16,14 +16,16 @@
   padding: 28px 64px;
   justify-content: space-between;
   align-items: center;
-  gap: 32px;
+  flex-wrap: wrap;
+  gap: 16px 32px;
   box-sizing: border-box;
 }
 
 .landing-footer__left {
   display: flex;
   align-items: center;
-  gap: 32px;
+  flex-wrap: wrap;
+  gap: 12px 32px;
 }
 
 .landing-footer__brand {
@@ -51,6 +53,7 @@
 }
 
 .landing-footer__link {
+  white-space: nowrap;
   font-size: 14px;
   color: #666;
   text-decoration: none;
@@ -85,18 +88,39 @@
   margin: 0;
 }
 
+/* Tablet: 좌우 배치가 좁아지면 위아래로 쌓는다 */
+@media (max-width: 1000px) {
+  .landing-footer__inner {
+    padding: 28px 32px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .landing-footer__meta {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .landing-footer__inner {
     padding: 32px 16px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 24px;
+    gap: 20px;
+  }
+
+  .landing-footer__left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 
   .landing-footer__links {
     width: 100%;
-    gap: 16px;
+    gap: 8px 16px;
   }
 
   .landing-footer__link {

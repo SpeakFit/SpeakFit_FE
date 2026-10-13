@@ -302,28 +302,6 @@
   background: #f4f6f8;
 }
 
-.presentation-deck__source {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  padding: 0 28px 16px;
-  color: #7a838f;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.presentation-deck__source span {
-  font-weight: 700;
-}
-
-.presentation-deck__source a {
-  min-width: 0;
-  overflow: hidden;
-  color: #1f68c7;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .presentation-deck__footer {
   min-height: 58px;
   border-top: 1px solid #f0f2f5;
