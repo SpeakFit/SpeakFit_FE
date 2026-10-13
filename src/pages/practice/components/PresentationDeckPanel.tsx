@@ -55,22 +55,26 @@ export default function PresentationDeckPanel({
 
   // 변환 단계 메시지 순환 (2.8초마다 페이드 전환)
   useEffect(() => {
-    if (!isUploading) {
-      setConversionStep(0);
-      setStepVisible(true);
-      return;
-    }
+    if (!isUploading) return;
+
+    let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const interval = setInterval(() => {
       // 페이드 아웃 후 텍스트 변경, 다시 페이드 인
       setStepVisible(false);
-      setTimeout(() => {
+      fadeTimeout = setTimeout(() => {
         setConversionStep((prev) => (prev + 1) % CONVERSION_STEPS.length);
         setStepVisible(true);
       }, 300);
     }, 2800);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fadeTimeout);
+      // 업로드가 끝나면 다음 업로드를 위해 첫 단계로 되돌린다.
+      setConversionStep(0);
+      setStepVisible(true);
+    };
   }, [isUploading]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {

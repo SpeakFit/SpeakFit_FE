@@ -259,10 +259,6 @@ function normalizePracticeStatus(status: string | undefined) {
   return status?.trim().toUpperCase() ?? "";
 }
 
-function getReportPollingMessage(report: PracticeReportResponse) {
-  return report.message ?? "발표 음성을 분석하고 있습니다.";
-}
-
 function getDiffLevel(
   diff: number | undefined,
   negativeLabel: string,
@@ -534,9 +530,6 @@ export default function PracticePage() {
     useState<SpeechStyleId | null>(null);
   const [stylesError, setStylesError] = useState<string | null>(null);
   const [practiceError, setPracticeError] = useState<string | null>(null);
-  const [analysisStatusMessage, setAnalysisStatusMessage] = useState<string | null>(
-    null,
-  );
   const [isSubmittingPractice, setIsSubmittingPractice] = useState(false);
   const [isFetchingReport, setIsFetchingReport] = useState(false);
   const [feedbackReport, setFeedbackReport] =
@@ -943,7 +936,6 @@ export default function PracticePage() {
     }
 
     setPracticeError(null);
-    setAnalysisStatusMessage(null);
     setFeedbackReport(null);
     reportRequestedRef.current = false;
     reportPollTokenRef.current += 1;
@@ -1019,7 +1011,6 @@ export default function PracticePage() {
     reportRequestedRef.current = true;
     setIsFetchingReport(true);
     setPracticeError(null);
-    setAnalysisStatusMessage("발표 음성을 분석하고 있습니다.");
     realtime.disconnect();
 
     try {
@@ -1033,7 +1024,6 @@ export default function PracticePage() {
         if (reportStatus === "ANALYZED") {
           setFeedbackReport(mapPracticeReport(report, practiceScript, practiceSentences));
           setActiveFeedbackMetric(null);
-          setAnalysisStatusMessage(null);
           setStage("record-finished");
           return;
         }
@@ -1042,7 +1032,6 @@ export default function PracticePage() {
           throw new Error(report.message ?? "발표 음성 분석에 실패했습니다.");
         }
 
-        setAnalysisStatusMessage(getReportPollingMessage(report));
 
         await new Promise((resolve) => {
           window.setTimeout(resolve, REPORT_POLL_INTERVAL_MS);
@@ -1058,7 +1047,6 @@ export default function PracticePage() {
           ? error.message
           : "분석 리포트를 불러오지 못했습니다.";
       setPracticeError(message);
-      setAnalysisStatusMessage(null);
       setStage("ready");
     } finally {
       if (reportPollTokenRef.current === pollToken) {
@@ -1072,7 +1060,6 @@ export default function PracticePage() {
       const finalBlob = await stopRecording();
       setActiveFeedbackMetric(null);
       setPracticeError(null);
-      setAnalysisStatusMessage("발표 음성을 업로드하고 있습니다.");
       setStage("analyzing");
 
       if (!practiceId || !finalBlob) {
@@ -1091,7 +1078,6 @@ export default function PracticePage() {
       const message =
         error instanceof Error ? error.message : "녹음 종료 처리에 실패했습니다.";
       setPracticeError(message);
-      setAnalysisStatusMessage(null);
       setIsFetchingReport(false);
     }
   };
@@ -1102,7 +1088,6 @@ export default function PracticePage() {
     realtime.disconnect();
     setFeedbackReport(null);
     setActiveFeedbackMetric(null);
-    setAnalysisStatusMessage(null);
     setPracticeError(null);
     setIsFetchingReport(false);
     setElapsedSeconds(0);
@@ -1322,9 +1307,6 @@ export default function PracticePage() {
           )}
         </div>
 
-        {analysisStatusMessage && !practiceError && (
-          <p className="practice-page__recording-error">{analysisStatusMessage}</p>
-        )}
         {recordingError && (
           <p className="practice-page__recording-error">{recordingError}</p>
         )}
