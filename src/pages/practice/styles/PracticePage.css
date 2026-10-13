@@ -1082,6 +1082,11 @@
   color: #a5afbf;
   font-size: 16px;
   line-height: 1;
+  transition: transform 0.16s ease;
+}
+
+.feedback-metric-card.is-active .feedback-metric-card__chevron {
+  transform: rotate(180deg);
 }
 
 .feedback-metric-card strong {
@@ -1107,33 +1112,16 @@
 }
 
 .feedback-metric-card__feedback {
-  position: absolute;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  left: 18px;
-  right: 18px;
-  top: calc(100% + 10px);
-  padding: 11px 13px;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #697386;
-  font-size: 11px;
-  line-height: 1.45;
+  align-self: stretch;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(72, 85, 106, 0.14);
+  color: #566174;
+  font-size: 12px;
+  line-height: 1.55;
   font-weight: 600;
-  box-shadow: 0 14px 34px rgba(25, 34, 50, 0.18);
-  z-index: 20;
   word-break: keep-all;
-  transition:
-    opacity 0.14s ease,
-    visibility 0.14s ease;
-}
-
-.feedback-metric-card:hover .feedback-metric-card__feedback,
-.feedback-metric-card:focus-visible .feedback-metric-card__feedback {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
+  overflow-wrap: anywhere;
 }
 
 .feedback-metric-card--slate strong {

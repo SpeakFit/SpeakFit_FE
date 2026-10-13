@@ -232,14 +232,10 @@ function formatNumber(value: number | undefined, suffix: string, fractionDigits 
   return `${Number(value.toFixed(fractionDigits))}${suffix}`;
 }
 
-function compactText(value: string | undefined, maxLength: number) {
+function normalizeText(value: string | undefined) {
   if (!value) return undefined;
 
-  const text = value.replace(/\s+/g, " ").trim();
-
-  if (text.length <= maxLength) return text;
-
-  return `${text.slice(0, maxLength).trim()}...`;
+  return value.replace(/\s+/g, " ").trim() || undefined;
 }
 
 function normalizeScriptLine(value: string | undefined) {
@@ -422,19 +418,19 @@ function mapPracticeReport(
     {
       ...getFallbackMetric(0),
       value:
-        compactText(aiAnalysis?.wpmSummary, 12) ??
+        normalizeText(aiAnalysis?.wpmSummary) ??
         getDiffLevel(analysis?.wpm?.diff, "느림", "빠름"),
       badge: formatNumber(analysis?.wpm?.avg, "wpm", 0) ?? getFallbackMetric(0).badge,
-      feedback: compactText(aiAnalysis?.wpmFeedback, 55),
+      feedback: normalizeText(aiAnalysis?.wpmFeedback),
     },
     {
       ...getFallbackMetric(1),
       value:
-        compactText(aiAnalysis?.energySummary, 12) ??
+        normalizeText(aiAnalysis?.energySummary) ??
         getDiffLevel(analysis?.intensity?.diff, "낮음", "높음"),
       badge:
         formatNumber(analysis?.intensity?.avg, "dB") ?? getFallbackMetric(1).badge,
-      feedback: compactText(aiAnalysis?.energyFeedback, 55),
+      feedback: normalizeText(aiAnalysis?.energyFeedback),
     },
     {
       ...getFallbackMetric(2),
@@ -444,19 +440,19 @@ function mapPracticeReport(
           analysis?.pause?.ratio === undefined ? undefined : analysis.pause.ratio * 100,
           "%",
         ) ?? getFallbackMetric(2).badge,
-      feedback: compactText(aiAnalysis?.pauseFeedback, 55),
+      feedback: normalizeText(aiAnalysis?.pauseFeedback),
     },
     {
       ...getFallbackMetric(3),
-      value: compactText(aiAnalysis?.symbolFeedback, 12) ?? "확인 필요",
+      value: normalizeText(aiAnalysis?.symbolFeedback) ?? "확인 필요",
       badge: "낭독 기호",
       feedback: undefined,
     },
     {
       ...getFallbackMetric(4),
-      value: compactText(aiAnalysis?.goalSummary, 12) ?? "목표 확인",
+      value: normalizeText(aiAnalysis?.goalSummary) ?? "목표 확인",
       badge: `${formatGoalPercent(aiAnalysis?.goalSimilarityScore)}%`,
-      feedback: compactText(aiAnalysis?.goalFeedback, 55),
+      feedback: normalizeText(aiAnalysis?.goalFeedback),
     },
   ];
 
@@ -477,7 +473,7 @@ function mapPracticeReport(
     script: scriptFromSentences || fallbackScript,
     goalPercent: formatGoalPercent(aiAnalysis?.goalSimilarityScore),
     summary:
-      compactText(aiAnalysis?.aiSummary, 70) ?? DEFAULT_FEEDBACK_REPORT.summary,
+      normalizeText(aiAnalysis?.aiSummary) ?? DEFAULT_FEEDBACK_REPORT.summary,
     tip:
       aiAnalysis?.goalFeedback ??
       aiAnalysis?.wpmFeedback ??

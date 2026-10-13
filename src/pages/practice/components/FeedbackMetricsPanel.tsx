@@ -6,7 +6,7 @@ type FeedbackMetricsPanelProps = {
   metrics: FeedbackMetric[];
   summary: string;
   tip: string;
-  onSelectMetric: (metricId: FeedbackMetricId) => void;
+  onSelectMetric: (metricId: FeedbackMetricId | null) => void;
   /** true이면 분석 결과 도착 전 스켈레톤 상태로 렌더링 */
   isLoading?: boolean;
 };
@@ -89,19 +89,19 @@ export default function FeedbackMetricsPanel({
               className={`feedback-metric-card feedback-metric-card--${metric.tone} ${
                 isActive ? "is-active" : ""
               }`}
-              onClick={() => onSelectMetric(metric.id)}
-              aria-pressed={isActive}
+              onClick={() => onSelectMetric(isActive ? null : metric.id)}
+              aria-expanded={isActive}
             >
               <span className="feedback-metric-card__top">
                 <span className="feedback-metric-card__label">
                   <i>{metric.initial}</i>
                   {metric.label}
                 </span>
-                <span className="feedback-metric-card__chevron">⌄</span>
+                <span className="feedback-metric-card__chevron" aria-hidden="true">⌄</span>
               </span>
               <strong>{metric.value}</strong>
               <span className="feedback-metric-card__badge">{metric.badge}</span>
-              {metric.feedback && (
+              {isActive && metric.feedback && (
                 <span className="feedback-metric-card__feedback" role="status">
                   {metric.feedback}
                 </span>
