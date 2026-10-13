@@ -109,22 +109,54 @@ export async function deleteScript(scriptId: number) {
   return unwrapResponse(data, "대본 삭제에 실패했습니다.");
 }
 
-export async function generateScript(payload: GenerateScriptRequest) {
-  const { data } = await api.post<ApiResponse<GeneratedScriptResponse>>(
-    "/api/scripts/ai-generate",
-    payload
-  );
+// 대본 생성/최적화 API 는 SSE 로 응답한다.
+//   data: {"chunk": "..."}  (여러 번) → data: [DONE]   또는   data: {"error": "..."}
+// 스트림이 끝날 때까지 받아 chunk 를 이어 붙여 하나의 대본으로 만든다.
+export function parseScriptStream(raw: string, fallbackMessage: string): GeneratedScriptResponse {
+  let content = "";
 
-  return unwrapResponse(data, "스크립트 생성에 실패했습니다.");
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line.startsWith("data:")) continue;
+
+    const payload = line.replace(/^(?:data:\s*)+/, "").trim();
+    if (!payload || payload === "[DONE]") continue;
+
+    let parsed: { chunk?: string; error?: string };
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      continue;
+    }
+
+    if (parsed.error) throw new Error(parsed.error);
+    if (parsed.chunk) content += parsed.chunk;
+  }
+
+  if (!content.trim()) throw new Error(fallbackMessage);
+
+  return { content };
 }
 
-export async function updateScript(payload: UpdateScriptRequest) {
-  const { data } = await api.post<ApiResponse<GeneratedScriptResponse>>(
-    "/api/scripts/ai-update",
-    payload
-  );
+async function postScriptStream(
+  url: string,
+  payload: GenerateScriptRequest | UpdateScriptRequest,
+  fallbackMessage: string
+) {
+  const { data } = await api.post<string>(url, payload, {
+    headers: { Accept: "text/event-stream" },
+    responseType: "text",
+    transformResponse: (body) => body,
+  });
 
-  return unwrapResponse(data, "스크립트 최적화에 실패했습니다.");
+  return parseScriptStream(typeof data === "string" ? data : "", fallbackMessage);
+}
+
+export function generateScript(payload: GenerateScriptRequest) {
+  return postScriptStream("/api/scripts/ai-generate", payload, "스크립트 생성에 실패했습니다.");
+}
+
+export function updateScript(payload: UpdateScriptRequest) {
+  return postScriptStream("/api/scripts/ai-update", payload, "스크립트 최적화에 실패했습니다.");
 }
 
 export async function patchScript(scriptId: number, payload: PatchScriptRequest) {
