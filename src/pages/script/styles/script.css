@@ -68,11 +68,11 @@
 }
 
 .script-page__content--two-columns {
-  grid-template-columns: 377px 1fr;
+  grid-template-columns: minmax(0, 377px) minmax(0, 1fr);
 }
 
 .script-page__content--three-columns {
-  grid-template-columns: 377px 584px 376px;
+  grid-template-columns: minmax(0, 377px) minmax(0, 584px) minmax(0, 376px);
 }
 
 .script-list-panel {
@@ -83,7 +83,7 @@
 }
 
 .script-list-panel__box {
-  width: 377px;
+  width: 100%;
   height: 660px;
   border-radius: 10px;
   border: 1px solid #f2f3f8;
@@ -320,7 +320,7 @@
 }
 
 .script-generator-panel {
-  width: 376px;
+  width: 100%;
   min-height: 660px;
   border-radius: 10px;
   border: 1px solid #f2f3f8;
@@ -549,6 +549,33 @@
   font-weight: 600;
   line-height: 140%;
   text-align: center;
+}
+
+@media (max-width: 1000px) {
+  .script-page__frame {
+    min-height: 0;
+    padding: 24px 20px 32px;
+  }
+
+  .script-page__content--two-columns,
+  .script-page__content--three-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .script-list-panel__box,
+  .script-editor-panel,
+  .script-generator-panel {
+    height: auto;
+    min-height: 0;
+  }
+
+  .script-list-panel__box {
+    max-height: 420px;
+  }
+
+  .script-editor-panel {
+    min-height: 480px;
+  }
 }
 
 @media (max-width: 1280px) {

@@ -174,15 +174,6 @@ export default function PresentationDeckPanel({
         )}
       </div>
 
-      {sourcePptUrl && !isUploading && (
-        <div className="presentation-deck__source">
-          <span>S3 저장소</span>
-          <a href={sourcePptUrl} target="_blank" rel="noreferrer">
-            {sourcePptUrl}
-          </a>
-        </div>
-      )}
-
       <div className="presentation-deck__footer">
         <button
           className="presentation-deck__nav"

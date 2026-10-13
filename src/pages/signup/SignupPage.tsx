@@ -59,6 +59,17 @@ export default function SignupPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isReady =
+    !!form.nickname.trim() &&
+    !!form.birthDate &&
+    !!form.email.trim() &&
+    !!form.password &&
+    !!form.passwordConfirm &&
+    !!form.gender &&
+    !!form.accent &&
+    form.serviceAgreed &&
+    form.privacyAgreed;
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -188,7 +199,7 @@ export default function SignupPage() {
               }
             />
 
-            <SubmitSection disabled={isSubmitting} />
+            <SubmitSection disabled={isSubmitting} isReady={isReady} />
           </form>
         </SignupCard>
       </div>
