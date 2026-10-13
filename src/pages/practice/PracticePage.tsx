@@ -554,6 +554,8 @@ export default function PracticePage() {
   const reportRequestedRef = useRef(false);
   const reportPollTokenRef = useRef(0);
   const presentationUploadTokenRef = useRef(0)
+  const hasAutoConfirmedIntroRef = useRef(false);
+  const [isAutoConfirmingIntro, setIsAutoConfirmingIntro] = useState(false);
   const realtime = usePracticeRealtime();
   const isPresentationMode = activeTab === "프레젠테이션 모드";
 
@@ -772,6 +774,19 @@ export default function PracticePage() {
       setIsSubmittingPractice(false);
     }
   };
+
+  // 대본 화면에서 이미 청중/스피치 정보를 입력하고 넘어온 경우, 모달을 건너뛰고 자동으로 "다음"을 진행한다.
+  // 실패하면 모달을 다시 보여 주어 사용자가 직접 재시도할 수 있게 한다(자동 재시도는 1회만).
+  useEffect(() => {
+    if (stage !== "intro-modal") return;
+    if (hasAutoConfirmedIntroRef.current) return;
+    if (!routeState?.introForm || !isIntroComplete) return;
+
+    hasAutoConfirmedIntroRef.current = true;
+    setIsAutoConfirmingIntro(true);
+    void handleConfirmIntro().finally(() => setIsAutoConfirmingIntro(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, isIntroComplete, routeState?.introForm]);
 
   const handlePreviewStyleTts = (styleId: SpeechStyleId) => {
     // 같은 스타일 버튼을 다시 누르면 정지
@@ -1338,7 +1353,7 @@ export default function PracticePage() {
           />
         )}
 
-        {stage === "intro-modal" && (
+        {stage === "intro-modal" && !isAutoConfirmingIntro && (
           <PracticeIntroModal
             form={introForm}
             onChange={setIntroForm}
